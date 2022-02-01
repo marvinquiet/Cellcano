@@ -2,10 +2,16 @@ python=3.6
 conda install -c conda-forge r-base=4.1.1
 conda install -c conda-forge r-devtools
 conda install -c conda-forge r-cairo
+conda install -c conda-forge tensorflow=1.15
+#conda install -c conda-forge tensorflow-gpu=1.15
 
 ## python package
 pip install rpy2
 pip install ipython
+pip install keras==2.1.0
+pip install matplotlib==3.3.4
+pip install anndata==0.7.4
+pip install scanpy==1.5.0
 
 ## R package
 BiocManager
