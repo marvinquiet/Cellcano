@@ -1,7 +1,10 @@
 import os
 import anndata
 import numpy as np
+import pandas as pd
+import scanpy as sc
 import scipy
+import random
 
 from sklearn.preprocessing import OneHotEncoder
 
@@ -9,8 +12,16 @@ from typing import TypeVar
 A = TypeVar('anndata')  ## generic for anndata
 ENC = TypeVar('OneHotEncoder')
 
-from ..models.distiller import MLP, Distiller
+from models.distiller import MLP, Distiller
+
 Ftest_Rcode = "Rcode/Ftest_selection.R"
+RANDOM_SEED = 1993
+random.seed(RANDOM_SEED)
+np.random.seed(RANDOM_SEED)
+Teacher_DIMS = [128, 32, 8]
+Student_DIMS = [64, 16]
+Celltype_COLUMN = "celltype"
+PredCelltype_COLUMN = "pred_celltype"
 
 def _COOmtx_data_loader(mtx_prefix: str) -> A:
     '''
@@ -22,13 +33,13 @@ def _COOmtx_data_loader(mtx_prefix: str) -> A:
     Output:
         - an anndata object
     '''
-    adata = anndata.read_mtx(mtx_prefix+'_genescore.mtx.gz').T
+    adata = anndata.read_mtx(mtx_prefix+'.mtx.gz').T
     genes = pd.read_csv(mtx_prefix+'_genes.tsv', header=None, sep='\t')
     adata.var["genes"] = genes[0].values
     adata.var_names = adata.var["genes"]
     adata.var_names_make_unique(join="-")
     adata.var.index.name = None
-    cells = pd.read_csv(mtx_prefix++'_cells.tsv', header=None, sep='\t')
+    cells = pd.read_csv(mtx_prefix+'_barcodes.tsv', header=None, sep='\t')
     adata.obs["barcode"] = cells[0].values
     adata.obs_names = adata.obs['barcode']
     adata.obs_names_make_unique(join="-")
@@ -102,6 +113,88 @@ def _process_adata(adata, celltype_label='celltype'):
     adata = adata[cells]
     return adata
 
+def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: int = 1000) -> A:
+    '''Select features
+    ---
+    Input:
+        - anndata
+        - tmp_dir: temporary dir for F-test
+        - fs_method: F-test / noFS / seurat
+    '''
+    if fs_method == "F-test":
+        print("Use F-test to select features.\n")
+        if scipy.sparse.issparse(adata.X) or \
+                isinstance(adata.X, pd.DataFrame):
+            tmp_data = adata.X.toarray()
+        else:
+            tmp_data = adata.X
+        ## write out original read count matrix
+        tmp_df = pd.DataFrame(data=np.round(tmp_data, 3), 
+                index=adata.obs_names, columns=adata.var_names).T
+        tmp_df_path = tmp_dir+os.sep+"tmp_counts.csv"
+        tmp_df.to_csv(tmp_df_path)
+        ## write out cell annotations based on train
+        cell_annots = adata.obs[Celltype_COLUMN].tolist()
+        cell_annots_path = tmp_dir+os.sep+"tmp_cell_annots.txt"
+        with open(cell_annots_path, 'w') as f:
+            for cell_annot in cell_annots:
+                f.write("%s\n" % cell_annot)
+        os.system("Rscript --vanilla " + Ftest_Rcode + " "+ tmp_df_path + " " + 
+                cell_annots_path + " " + str(num_features))
+        os.system("rm {}".format(cell_annots_path))  ## remove the temporaty cell annotations
+        os.system("rm {}".format(tmp_df_path))  ## remove the temporaty counts
+
+        ftest_file = tmp_dir+os.sep+'F-test_features.txt'
+        with open(ftest_file) as f:
+            features = f.read().splitlines()
+        features.sort()
+        train_adata = train_adata[:, features]
+
+    if fs_method == "seurat":
+        print("Use seurat in scanpy to select features.\n")
+        sc.pp.highly_variable_genes(adata, n_top_genes=num_features, subset=True)
+        seurat_file = tmp_dir+os.sep+'Seurat_features.txt'
+        with open(seurat_file, 'w') as f:
+            f.writelines(adata.var_names.tolist())
+
+    return adata
+
+
+def _scale_data(adata):
+    '''Center scale
+    '''
+    sc.pp.scale(adata, zero_center=True, max_value=6)
+    return adata
+
+def _visualize_data(adata, output_dir, color_columns=["celltype"],
+        reduction="tSNE", prefix="data"):
+    '''Visualize data 
+
+    ---
+    Input:
+        - reduction: tSNE or UMAP
+        - color_columns: plot on categories
+    '''
+    sc.tl.pca(adata, random_state=RANDOM_SEED)
+
+    if reduction == "tSNE":
+        sc.tl.tsne(adata, use_rep="X_pca",
+            learning_rate=300, perplexity=30, n_jobs=4, random_state=dr_seed)
+        sc.pl.tsne(adata, color=color_columns)
+        plt.tight_layout()
+        plt.savefig(output_dir+os.sep+prefix+"tSNE_cluster.png")
+    if reduction == "UMAP":
+        sc.pp.neighbors(adata, n_neighbors=20, use_rep="X_pca", random_state=RANDOM_SEED) 
+        sc.tl.umap(adata, random_state=RANDOM_SEED)
+        sc.pl.umap(adata, color=color_columns)
+        plt.tight_layout()
+        plt.savefig(output_dir+os.sep+prefix+"umap_cluster.png")
+
+def _save_adata(adata, output_dir, prefix=""):
+    '''Save anndata as h5ad
+    '''
+    adata.write(output_dir+os.sep+prefix+'adata.h5ad')
+
 
 def _prob_to_label(enc: ENC, y_pred: np.ndarray) -> np.ndarray:
     '''Turn predicted probabilites to labels
@@ -121,30 +214,28 @@ def _prob_to_label(enc: ENC, y_pred: np.ndarray) -> np.ndarray:
     print("=== Predicted celltypes: ", set(pred_celltypes.flatten()))
     return pred_celltypes.flatten() ## (N,)
 
-def _prepare_data(train_adata: A, test_adata: A, 
-        enc: ENC = None, celltype_cols: str = "cell.type"):
-    '''Prepare training and test anndata
+def _extract_adata(adata: A) -> np.ndarray:
+    '''Extract adata.X to a numpy array
     ---
     Output:
-        - encoder: new encoder
-        - x_train, y_train, x_test
+         - matrix in np.ndarray format
     '''
-    if scipy.sparse.issparse(train_adata.X):
-        x_train = train_adata.X.toarray()
+    if scipy.sparse.issparse(adata.X):
+        X = adata.X.toarray()
     else:
-        x_train = train_adata.X
+        X = adata.X
+    return X
 
-    if scipy.sparse.issparse(test_adata.X):
-        x_test = test_adata.X.toarray()
-    else:
-        x_test = test_adata.X
- 
-    if enc is None:
-        enc = OneHotEncoder(handle_unknown='ignore')
-        y_train = enc.fit_transform(train_adata.obs[[celltype_cols]]).toarray()
-    else:
-        y_train = enc.transform(train_adata.obs[[celltype_cols]]).toarray()
-    return enc, x_train, y_train, x_test
+def _init_MLP(x_train, y_train, dims=[64, 16], seed=0):
+    '''Initialize MLP model based on input data
+    '''
+    mlp = MLP(dims)
+    mlp.input_shape = (x_train.shape[1], )
+    mlp.n_classes = len(set(y_train.argmax(1)))
+    mlp.random_state = seed
+    mlp.init_MLP_model()  ## init the model
+    return mlp
+
 
 def _identify_low_entropy_cells(test_adata, low_entropy_quantile,
         pred_celltype_cols):
@@ -163,17 +254,6 @@ def _identify_low_entropy_cells(test_adata, low_entropy_quantile,
     test_adata.obs.loc[low_entropy_cells, 'entropy_status'] = "low"
     test_adata.obs.loc[high_entropy_cells, 'entropy_status'] = "high"
     return test_adata
-
-
-def _init_MLP(x_train, y_train, dims=[64, 16], seed=0):
-    '''Initialize MLP model based on input data
-    '''
-    mlp = MLP(dims)
-    mlp.input_shape = (x_train.shape[1], )
-    mlp.n_classes = len(set(y_train.argmax(1)))
-    mlp.random_state = seed
-    mlp.init_MLP_model()  ## init the model
-    return mlp
 
 def run_MLP(x_train, y_train, x_test, dims=[64, 16],
         batch_size=128, seed=0, save_dir=None,

@@ -38,6 +38,7 @@ preprocess_parser.add_argument('--threads',
 # Parser for training gene score matrix to a model
 # -i, --input
 # -m, --metadata
+# --model
 # -o, --output_dir
 # --fs
 # --num_features
@@ -52,8 +53,15 @@ train_parser.add_argument('-i', '--input', dest='input',
 train_parser.add_argument('-m', '--metadata', dest='metadata', 
         type=str, required=True,
         help="The annotation dataframe with row as barcodes or cell ID and columns as celltype. Notice: please make sure that your cell type indicator be 'celltype'.")
-train_parser.add_argument('-o', '--output_dir', dest='output_dir', type=str,
+train_parser.add_argument('--model', dest='model',
+        type=str, default='KD', choices=['KD', 'ADDA'],
+        help="Model used to train the data.")
+train_parser.add_argument('-o', '--output_dir', dest='output_dir', 
+        type=str,
         help="Output directory.")
+train_parser.add_argument('--prefix', dest='prefix', 
+        type=str, default='train_',
+        help="Output prefix.")
 train_parser.add_argument('--fs', dest='fs', 
         help="Feature selection methods.", 
         choices=["F-test", "noFS", "seurat"], type=str, default="F-test")
@@ -74,14 +82,22 @@ predict_parser.add_argument('-o', '--output', dest='output', default="Pyramid_pr
         help="A dataframe with row as barcodes and columns as predicted cell types.")
 
 args = parser.parse_args()
-print(args)
+
+logger.DEBUG("User input arguments: ", args)
 
 if "preprocess" == args.cmd_choice:
     preprocess.preprocess(args)
 
 if "train" == args.cmd_choice:
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir, exist_ok=True)
 
-    pass
+    if args.model == "KD":
+        onestepKD.train_onestepKD(args)
+
+    if args.model == "ADDA":
+        #ADDA.train_ADDA(args)
+        pass
 
 if "predict" == args.cmd_choice:
     pass
