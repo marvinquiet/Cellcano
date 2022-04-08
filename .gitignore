@@ -1,5 +1,8 @@
 ## folders
-Pyramid/samples/
+samples/
+output/
+log/
+
 
 ## vim file
 *.swp

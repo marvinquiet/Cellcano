@@ -1,3 +1,5 @@
+__all__ = ['preprocess', 'trainKD', 'predict', 'ADDA']
+
 """Logging file
 """
 import os, logging
@@ -5,12 +7,13 @@ from datetime import datetime
 
 ## create a logger
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 #logging.basicConfig(datefmt='%Y-%m-%d %H:%M:%S')
 
 ## set file handler and formatter
 abs_path = os.path.dirname(os.path.abspath(__file__))
 abs_root_path = os.path.dirname(abs_path)
-log_dir_path = abs_root_path + os.sep + 'log'
+log_dir_path = abs_root_path+os.sep+'log'
 if not os.path.exists(log_dir_path):
     os.makedirs(log_dir_path)
 
@@ -30,3 +33,4 @@ c_format = logging.Formatter('%(module)s.%(funcName)s: %(levelname)s: %(message)
 ch.setFormatter(c_format)
 logger.addHandler(ch)
 
+logger.debug(f"Logger set successfully in {__name__}")

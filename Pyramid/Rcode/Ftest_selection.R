@@ -1,13 +1,13 @@
 ## load library for reading Anndata H5AD file and selecting top features
 #suppressMessages(library(FEAST))
-require(matrixStats)
+suppressMessages(library(matrixStats))
 
 ## code from FEAST package: https://github.com/suke18/FEAST/blob/85102e6f9c91e88143ba2a1daebbe8422359d794/R/Fisher_F.R
-cal_F2 = function(Ynorm, classes){
-    #if (all(Y%%1 == 0)){
-    #    L = colSums(Y) / median(colSums(Y))
-    #    Ynorm = log2(sweep(Y, 2, L, FUN="/") + 1)
-    #}else{Ynorm = Y}
+cal_F2 = function(Y, classes){
+    if (all(Y%%1 == 0)){
+        L = colSums(Y) / median(colSums(Y))
+        Ynorm = log2(sweep(Y, 2, L, FUN="/") + 1)
+    }else{Ynorm = Y}
     cid = which(is.na(classes))
     if (length(cid) > 0){
         Ynorm = Ynorm[, -cid]

@@ -1,10 +1,15 @@
 import os
+import logging
 import anndata
 import numpy as np
 import pandas as pd
 import scanpy as sc
 import scipy
 import random
+import tensorflow as tf
+
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 18})
 
 from sklearn.preprocessing import OneHotEncoder
 
@@ -12,9 +17,11 @@ from typing import TypeVar
 A = TypeVar('anndata')  ## generic for anndata
 ENC = TypeVar('OneHotEncoder')
 
-from models.distiller import MLP, Distiller
+from Pyramid.models.distiller import MLP, Distiller
 
-Ftest_Rcode = "Rcode/Ftest_selection.R"
+logger = logging.getLogger(__name__)
+
+Ftest_Rcode = "Pyramid/Rcode/Ftest_selection.R"
 RANDOM_SEED = 1993
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
@@ -22,6 +29,14 @@ Teacher_DIMS = [128, 32, 8]
 Student_DIMS = [64, 16]
 Celltype_COLUMN = "celltype"
 PredCelltype_COLUMN = "pred_celltype"
+
+GPU_list = tf.config.list_physical_devices('GPU')
+logger.info("Num GPUs Available: %d" % len(GPU_list))
+if len(GPU_list) == 0:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+else:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
 
 def _COOmtx_data_loader(mtx_prefix: str) -> A:
     '''
@@ -121,6 +136,16 @@ def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: 
         - tmp_dir: temporary dir for F-test
         - fs_method: F-test / noFS / seurat
     '''
+    ## Feature selection
+    if fs_method == "noFS":
+        logger.info("Pyramid will not perform feature selection.\n")
+        return adata
+    else:
+        num_features = args.num_features
+        if num_features < adata.shape[0]:
+            logger.warning("Number of features is larger than data. Pyramid will not perform feature selection.\n")
+            num_features = adata.shape[0]
+
     if fs_method == "F-test":
         print("Use F-test to select features.\n")
         if scipy.sparse.issparse(adata.X) or \
@@ -139,6 +164,10 @@ def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: 
         with open(cell_annots_path, 'w') as f:
             for cell_annot in cell_annots:
                 f.write("%s\n" % cell_annot)
+        if not os.path.exists(Ftest_Rcode):
+            logger.error("Rcode for F-test does not exist. Abort feature selection.")
+            return adata
+
         os.system("Rscript --vanilla " + Ftest_Rcode + " "+ tmp_df_path + " " + 
                 cell_annots_path + " " + str(num_features))
         os.system("rm {}".format(cell_annots_path))  ## remove the temporaty cell annotations
@@ -148,7 +177,7 @@ def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: 
         with open(ftest_file) as f:
             features = f.read().splitlines()
         features.sort()
-        train_adata = train_adata[:, features]
+        adata = adata[:, features]
 
     if fs_method == "seurat":
         print("Use seurat in scanpy to select features.\n")
@@ -179,7 +208,7 @@ def _visualize_data(adata, output_dir, color_columns=["celltype"],
 
     if reduction == "tSNE":
         sc.tl.tsne(adata, use_rep="X_pca",
-            learning_rate=300, perplexity=30, n_jobs=4, random_state=dr_seed)
+            learning_rate=300, perplexity=30, n_jobs=4, random_state=RANDOM_SEED)
         sc.pl.tsne(adata, color=color_columns)
         plt.tight_layout()
         plt.savefig(output_dir+os.sep+prefix+"tSNE_cluster.png")
@@ -282,9 +311,9 @@ def run_MLP(x_train, y_train, x_test, dims=[64, 16],
     end = time.time()
     return y_pred, end-start
 
-def run_distiller(x_train, y_train, student_model, teacher_model,
+def _run_distiller(x_train, y_train, student_model, teacher_model,
         epochs=30, alpha=0.1, temperature=3):
-    '''Pipeline for Distiller
+    '''Train KD model
     '''
     distiller = Distiller(student=student_model, teacher=teacher_model)
     distiller.compile(

@@ -1,6 +1,9 @@
 import os, argparse
 from Pyramid import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 parser = argparse.ArgumentParser(description="Pyramid: a supervised celltyping pipeline for single-cell omics.",
         prog='Pyramid')
 subparsers = parser.add_subparsers(help='sub-command help.', dest='cmd_choice')
@@ -38,8 +41,10 @@ preprocess_parser.add_argument('--threads',
 # Parser for training gene score matrix to a model
 # -i, --input
 # -m, --metadata
+# --anndata
 # --model
 # -o, --output_dir
+# --prefix
 # --fs
 # --num_features
 # --teacher_ns
@@ -48,16 +53,19 @@ preprocess_parser.add_argument('--threads',
 
 train_parser = subparsers.add_parser('train', help='Train a Pyramid model.')
 train_parser.add_argument('-i', '--input', dest='input', 
-        type=str, required=True,
+        type=str,
         help="A COO matrix prefix or a csv input.")
 train_parser.add_argument('-m', '--metadata', dest='metadata', 
-        type=str, required=True,
+        type=str, 
         help="The annotation dataframe with row as barcodes or cell ID and columns as celltype. Notice: please make sure that your cell type indicator be 'celltype'.")
+train_parser.add_argument('--anndata', dest='anndata',
+        type=str,
+        help="Pyramid provides an option to load processed anndata object generated previously to reduce loading time.")
 train_parser.add_argument('--model', dest='model',
         type=str, default='KD', choices=['KD', 'ADDA'],
         help="Model used to train the data.")
 train_parser.add_argument('-o', '--output_dir', dest='output_dir', 
-        type=str,
+        type=str, default="output",
         help="Output directory.")
 train_parser.add_argument('--prefix', dest='prefix', 
         type=str, default='train_',
@@ -74,32 +82,54 @@ train_parser.add_argument('--student_ns', dest='student_ns',
         type=int, nargs='+',
         help="Student network structure.")
 
-## create parser for prediction
+## ===========================
+# Parser for predicting gene score matrix
+# -i, --input
+# --trained_model
+# --predict_type
+# -o, --output_dir
+# --prefix
+# ============================
+
 predict_parser = subparsers.add_parser('predict', help='Use Pyramid model to predict cell types.')
-predict_parser.add_argument('--gs_prefix', dest='gs_prefix', required=True,
-        help="Gene Score matrix generated for test data.")
-predict_parser.add_argument('-o', '--output', dest='output', default="Pyramid_predict",
-        help="A dataframe with row as barcodes and columns as predicted cell types.")
+predict_parser.add_argument('-i', '--input', dest='input', 
+        type=str, required=True,
+        help="A COO matrix prefix or a csv input.")
+predict_parser.add_argument('--trained_model', dest='trained_model',
+        type=str, required=True,
+        help="Path to the trained model.")
+predict_parser.add_argument('--predict_type', dest='predict_type',
+        type=str, default="tworound_predict",
+        help="Strategy to predict cells.", 
+        choices=["direct_predict", "tworound_predict"])
+predict_parser.add_argument('-o', '--output_dir', dest='output_dir', 
+        type=str, default="output",
+        help="Output directory.")
+predict_parser.add_argument('--prefix', dest='prefix', 
+        type=str, default='predict_',
+        help="Output prefix.")
 
 args = parser.parse_args()
-
-logger.DEBUG("User input arguments: ", args)
+logger.debug("User input arguments: ", args)
 
 if "preprocess" == args.cmd_choice:
     preprocess.preprocess(args)
 
 if "train" == args.cmd_choice:
     if not os.path.exists(args.output_dir):
+        logger.info("Creating output directory: %s" % args.output_dir)
         os.makedirs(args.output_dir, exist_ok=True)
 
     if args.model == "KD":
-        onestepKD.train_onestepKD(args)
+        trainKD.train_onestepKD(args)
 
     if args.model == "ADDA":
         #ADDA.train_ADDA(args)
         pass
 
 if "predict" == args.cmd_choice:
-    pass
+    if not os.path.exists(args.trained_model):
+        logger.error("The input model does not exist.")
+    predict.predict(args)
 
 
