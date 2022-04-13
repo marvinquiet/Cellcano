@@ -15,7 +15,7 @@ from Pyramid.utils import _utils
 logger = logging.getLogger(__name__)
 
 def predict(args):
-    model = tf.keras.models.load_model(ars.trained_model)
+    model = tf.keras.models.load_model(args.trained_model)
     feature_file = args.trained_model+os.sep+'features.txt'
     encoder_file = args.trained_model+os.sep+'onehot_encoder.txt'
     if not os.path.exists(feature_file) or not os.path.exists(encoder_file):
@@ -33,17 +33,17 @@ def predict(args):
 
     ## load input data
     logger.info("Loading data... \n This may take a while depending on your data size..")
-    if '.csv' in inputfile:
+    if '.csv' in args.input:
         test_adata = _utils._csv_data_loader(args.input)
     else:
         test_adata = _utils._COOmtx_data_loader(args.input)
     ## process test adata
     test_adata = _utils._process_adata(test_adata, process_type='test')
 
-    ## find paired data
+    ## fill in the data with the same order of features
     feature_idx = []
     find_cnt = 0
-    for f_idx, feature in enumerate(features):
+    for feature in features:
         find_flag = False
         for test_idx, gene in enumerate(test_adata.var_names):
             if gene == feature:
@@ -54,12 +54,13 @@ def predict(args):
         if not find_flag:
             feature_idx.append(-1)
 
-    if len(find_cnt) < 0.7*len(features):
-        logger.warning("The common feature space between reference dataset and target dataset is too few with %d genes.\n This will result in inaccurate prediction." % len(common_features))
+    if find_cnt < 0.7*len(features):
+        logger.warning("The common feature space between reference dataset and target dataset is too few with %d genes.\n This will result in inaccurate prediction." % find_cnt)
     else:
-        logger.info("Common feature space between reference and target: %d genes" % len(common_features))
+        logger.info("Common feature space between reference and target: %d genes" % find_cnt)
 
-    test_adata = test_adata[:, feature_idx]
+    if -1 not in feature_idx:
+        test_adata = test_adata[:, feature_idx]
     logger.info("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
 
     test_adata = _utils._scale_data(test_adata)
@@ -68,10 +69,9 @@ def predict(args):
     y_pred = tf.nn.softmax(model.predict(test_data_mat)).numpy()
     pred_celltypes = _utils._prob_to_label(y_pred, encoders)
     test_adata.obs[_utils.PredCelltype_COLUMN] = pred_celltypes
-    pred_celltypes = _utils._prob_to_label(y_pred, encoders)
 
     if args.predict_type == "direct_predict":
-        test_adata.obs[PredCelltype_COLUMN] = pred_celltypes
+        test_adata.obs.to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
 
     if args.predict_type == "tworound_predict":
         firstround_COLUMN = 'firstround_' + _utils.PredCelltype_COLUMN
@@ -87,7 +87,8 @@ def predict(args):
         test_tgt_adata = test_adata[high_entropy_cells]
 
         x_tgt_train = _utils._extract_adata(test_ref_adata)
-        y_tgt_train = _utils._label_to_onehot(test_ref_adata.obs[firstround_COLUMN].tolist())
+        y_tgt_train = _utils._label_to_onehot(test_ref_adata.obs.loc[low_entropy_cells, firstround_COLUMN].tolist(),
+                encoders=encoders)
         x_tgt_test = _utils._extract_adata(test_tgt_adata)
 
         ## teahcer/studenmt model on original celltype label
@@ -106,5 +107,5 @@ def predict(args):
 
         pred_celltypes = _utils._prob_to_label(y_pred_tgt, encoders)
         test_adata.obs.loc[high_entropy_cells, _utils.PredCelltype_COLUMN] = pred_celltypes
-    test_adata.obs.to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
+        test_adata.obs.to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
 

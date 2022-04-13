@@ -1,4 +1,5 @@
 import os
+import math
 import logging
 import anndata
 import numpy as np
@@ -245,7 +246,7 @@ def _prob_to_label(y_pred: np.ndarray, encoders: dict) -> list:
     print("=== Predicted celltypes: ", set(pred_celltypes))
     return pred_celltypes
 
-def _label_to_onehot(labels, encoders:dict) -> list:
+def _label_to_onehot(labels: list, encoders:dict) -> np.ndarray:
     '''Turn predicted labels to onehot encoder
     ---
     Input: 
@@ -281,69 +282,6 @@ def _init_MLP(x_train, y_train, dims=[64, 16], seed=0):
     mlp.init_MLP_model()  ## init the model
     return mlp
 
-
-def _identify_low_entropy_cells(test_adata, low_entropy_quantile,
-        pred_celltype_cols):
-    '''Select low entropy cells from each cell type
-    ---
-    Output:
-        - test anndata: with 'entropy_status' added
-    '''
-    low_entropy_cells = []
-    for celltype in set(test_adata.obs[pred_celltype_cols]):
-        celltype_df = test_adata.obs[test_adata.obs[pred_celltype_cols] == celltype]
-        entropy_cutoff = np.quantile(celltype_df['entropy'], q=low_entropy_quantile)
-        cells = celltype_df.index[np.where(celltype_df['entropy'] < entropy_cutoff)[0]].tolist()
-        low_entropy_cells.extend(cells)
-    high_entropy_cells = list(set(test_adata.obs_names) - set(low_entropy_cells))
-    test_adata.obs.loc[low_entropy_cells, 'entropy_status'] = "low"
-    test_adata.obs.loc[high_entropy_cells, 'entropy_status'] = "high"
-    return test_adata
-
-def run_MLP(x_train, y_train, x_test, dims=[64, 16],
-        batch_size=128, seed=0, save_dir=None,
-        sample_weight=None, class_weight=None):
-    '''Pipeline for MLP
-    '''
-    mlp = _init_MLP(x_train, y_train, dims, seed)
-    mlp.compile()
-
-    if save_dir is None:
-        mlp.fit(x_train, y_train, batch_size=batch_size,
-                sample_weight=sample_weight, class_weight=class_weight)
-    else:
-        if os.path.exists(save_dir):
-            ## load weights from saved checkpoint
-            mlp.model.load_weights(save_dir)
-        else:
-            mlp.fit(x_train, y_train, batch_size=batch_size,
-                    sample_weight=sample_weight, class_weight=class_weight)
-            mlp.model.save_weights(save_dir)
-    mlp.model.summary()
-
-    ## only calculate predicting time
-    start = time.time()
-    y_pred = mlp.predict(x_test)
-    end = time.time()
-    return y_pred, end-start
-
-def _run_distiller(x_train, y_train, student_model, teacher_model,
-        epochs=30, alpha=0.1, temperature=3):
-    '''Train KD model
-    '''
-    distiller = Distiller(student=student_model, teacher=teacher_model)
-    distiller.compile(
-        optimizer=tf.keras.optimizers.Adam(),
-        metrics=["accuracy"],
-        student_loss_fn=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-        distillation_loss_fn=tf.keras.losses.KLDivergence(),
-        alpha=alpha,
-        temperature=temperature,
-    )
-    distiller.fit(x_train, y_train, epochs=epochs,
-            validation_split=0.0, verbose=2)
-    return distiller
-
 def _select_confident_cells(adata, celltype_col):
     '''Select low entropy cells from each predicted cell type
     ---
@@ -364,8 +302,26 @@ def _select_confident_cells(adata, celltype_col):
         else:
             selected_cells = cells
         low_entropy_cells.extend(selected_cells)
-    high_entropy_cells = list(set(test_adata.obs_names) - set(low_entropy_cells))
-    test_adata.obs.loc[low_entropy_cells, 'entropy_status'] = "low"
-    test_adata.obs.loc[high_entropy_cells, 'entropy_status'] = "high"
-    return test_adata
- 
+    high_entropy_cells = list(set(adata.obs_names) - set(low_entropy_cells))
+    adata.obs.loc[low_entropy_cells, 'entropy_status'] = "low"
+    adata.obs.loc[high_entropy_cells, 'entropy_status'] = "high"
+    return adata
+
+def _run_distiller(x_train, y_train, student_model, teacher_model,
+        epochs=30, alpha=0.1, temperature=3):
+    '''Train KD model
+    '''
+    distiller = Distiller(student=student_model, teacher=teacher_model)
+    distiller.compile(
+        optimizer=tf.keras.optimizers.Adam(),
+        metrics=["accuracy"],
+        student_loss_fn=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+        distillation_loss_fn=tf.keras.losses.KLDivergence(),
+        alpha=alpha,
+        temperature=temperature,
+    )
+    distiller.fit(x_train, y_train, epochs=epochs,
+            validation_split=0.0, verbose=2)
+    return distiller
+
+
