@@ -1,5 +1,5 @@
 import os, argparse
-from Pyramid import *
+from Pyramid import preprocess, train, predict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ preprocess_parser.add_argument('--threads',
 # --num_features
 # --teacher_ns
 # --student_ns
+# --mlp_ns
 # ============================
 
 train_parser = subparsers.add_parser('train', help='Train a Pyramid model.')
@@ -62,7 +63,7 @@ train_parser.add_argument('--anndata', dest='anndata',
         type=str,
         help="Pyramid provides an option to load processed anndata object generated previously to reduce loading time.")
 train_parser.add_argument('--model', dest='model',
-        type=str, default='KD', choices=['KD', 'ADDA'],
+        type=str, default='MLP', choices=['MLP', 'KD', 'ADDA'],
         help="Model used to train the data.")
 train_parser.add_argument('-o', '--output_dir', dest='output_dir', 
         type=str, default="output",
@@ -81,6 +82,10 @@ train_parser.add_argument('--teacher_ns', dest='teacher_ns',
 train_parser.add_argument('--student_ns', dest='student_ns', 
         type=int, nargs='+',
         help="Student network structure.")
+train_parser.add_argument('--mlp_ns', dest='mlp_ns', 
+        type=int, nargs='+',
+        help="MLP network structure.")
+
 
 ## ===========================
 # Parser for predicting gene score matrix
@@ -121,15 +126,17 @@ if "train" == args.cmd_choice:
         os.makedirs(args.output_dir, exist_ok=True)
 
     if args.model == "KD":
-        trainKD.train_onestepKD(args)
+        train.train_KD(args)
 
     if args.model == "ADDA":
         #ADDA.train_ADDA(args)
         pass
 
+    if args.model == "MLP":
+        train.train_MLP(args)
+
 if "predict" == args.cmd_choice:
     if not os.path.exists(args.trained_model):
         logger.error("The input model does not exist.")
     predict.predict(args)
-
 

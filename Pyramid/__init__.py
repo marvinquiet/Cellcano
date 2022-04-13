@@ -1,5 +1,3 @@
-__all__ = ['preprocess', 'trainKD', 'predict', 'ADDA']
-
 """Logging file
 """
 import os, logging

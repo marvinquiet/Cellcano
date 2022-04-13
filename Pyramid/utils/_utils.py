@@ -17,7 +17,8 @@ from typing import TypeVar
 A = TypeVar('anndata')  ## generic for anndata
 ENC = TypeVar('OneHotEncoder')
 
-from Pyramid.models.distiller import MLP, Distiller
+from Pyramid.models.distiller import Distiller
+from Pyramid.models.MLP import MLP
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +26,14 @@ Ftest_Rcode = "Pyramid/Rcode/Ftest_selection.R"
 RANDOM_SEED = 1993
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
-Teacher_DIMS = [128, 32, 8]
+
+MLP_DIMS = [64, 16]
+Teacher_DIMS = [64, 16]
 Student_DIMS = [64, 16]
+BATCH_SIZE = 32
 Celltype_COLUMN = "celltype"
 PredCelltype_COLUMN = "pred_celltype"
+ENTROPY_QUANTILE = 0.4
 
 GPU_list = tf.config.list_physical_devices('GPU')
 logger.info("Num GPUs Available: %d" % len(GPU_list))
@@ -94,7 +99,7 @@ def _metadata_loader(metadata):
     return metadata
 
 
-def _process_adata(adata, celltype_label='celltype'):
+def _process_adata(adata, process_type='train', celltype_label='celltype'):
     '''Procedures for filtering single-cell gene scale data (can be gene expression, or gene scores)
        1. Filter nonsense genes;
        2. Normalize and log-transform the data;
@@ -124,8 +129,9 @@ def _process_adata(adata, celltype_label='celltype'):
     sc.pp.log1p(adata)
 
     ## cells with celltypes
-    cells = adata.obs.dropna(subset=[celltype_label]).index.tolist()
-    adata = adata[cells]
+    if process_type == 'train':
+        cells = adata.obs.dropna(subset=[celltype_label]).index.tolist()
+        adata = adata[cells]
     return adata
 
 def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: int = 1000) -> A:
@@ -141,10 +147,9 @@ def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: 
         logger.info("Pyramid will not perform feature selection.\n")
         return adata
     else:
-        num_features = args.num_features
-        if num_features < adata.shape[0]:
+        if num_features > adata.shape[1]:
             logger.warning("Number of features is larger than data. Pyramid will not perform feature selection.\n")
-            num_features = adata.shape[0]
+            num_features = adata.shape[1]
 
     if fs_method == "F-test":
         print("Use F-test to select features.\n")
@@ -225,23 +230,34 @@ def _save_adata(adata, output_dir, prefix=""):
     adata.write(output_dir+os.sep+prefix+'adata.h5ad')
 
 
-def _prob_to_label(enc: ENC, y_pred: np.ndarray) -> np.ndarray:
+def _prob_to_label(y_pred: np.ndarray, encoders: dict) -> list:
     '''Turn predicted probabilites to labels
     --- 
     Input:
-        - enc: Encoder object
         - y_pred: Predicted probabilities
+        - encoders: dictionary with mapping information
     ---
     Output:
-        - an numpy ndarray containing predicted cell types
+        - a list containing predicted cell types
     '''
     pred_labels = y_pred.argmax(1)
-    n_clusters = len(enc.categories_[0])  ## number of cell types from enc
-    pred_onehot = np.zeros((pred_labels.size, n_clusters))
-    pred_onehot[np.arange(pred_labels.size), pred_labels] = 1
-    pred_celltypes = enc.inverse_transform(pred_onehot)
-    print("=== Predicted celltypes: ", set(pred_celltypes.flatten()))
-    return pred_celltypes.flatten() ## (N,)
+    pred_celltypes = [encoders[label] for label in pred_labels]
+    print("=== Predicted celltypes: ", set(pred_celltypes))
+    return pred_celltypes
+
+def _label_to_onehot(labels, encoders:dict) -> list:
+    '''Turn predicted labels to onehot encoder
+    ---
+    Input: 
+        - labels: the input predicted cell types
+        - encoders: dictionary with mapping information
+    '''
+    inv_enc = {v: k for k, v in encoders.items()}
+    onehot_arr = np.zeros((len(labels), len(encoders)))
+    pred_idx = [inv_enc[l] for l in labels]
+    onehot_arr[np.arange(len(labels)), pred_idx] = 1
+    return onehot_arr
+
 
 def _extract_adata(adata: A) -> np.ndarray:
     '''Extract adata.X to a numpy array
@@ -249,7 +265,7 @@ def _extract_adata(adata: A) -> np.ndarray:
     Output:
          - matrix in np.ndarray format
     '''
-    if scipy.sparse.issparse(adata.X):
+    if scipy.sparse.issparse(adata.X) or isinstance(adata.X, pd.DataFrame) or isinstance(adata.X, anndata._core.views.ArrayView):
         X = adata.X.toarray()
     else:
         X = adata.X
@@ -327,4 +343,29 @@ def _run_distiller(x_train, y_train, student_model, teacher_model,
     distiller.fit(x_train, y_train, epochs=epochs,
             validation_split=0.0, verbose=2)
     return distiller
+
+def _select_confident_cells(adata, celltype_col):
+    '''Select low entropy cells from each predicted cell type
+    ---
+    Input:
+        - adata: anndata object
+        - celltype_col: the column indicator
+    '''
+    low_entropy_cells = []
+    for celltype in set(adata.obs[celltype_col]):
+        celltype_df = adata.obs[adata.obs[celltype_col] == celltype]
+        entropy_cutoff = np.quantile(celltype_df['entropy'], q=ENTROPY_QUANTILE)
+        ## change to < instead of <= to deal with ties
+        cells = celltype_df.index[np.where(celltype_df['entropy'] <= entropy_cutoff)[0]].tolist()
+        num_cells = math.ceil(ENTROPY_QUANTILE*celltype_df.shape[0])
+        if len(cells) > num_cells:
+            random.seed(RANDOM_SEED)
+            selected_cells = sample(cells, num_cells)
+        else:
+            selected_cells = cells
+        low_entropy_cells.extend(selected_cells)
+    high_entropy_cells = list(set(test_adata.obs_names) - set(low_entropy_cells))
+    test_adata.obs.loc[low_entropy_cells, 'entropy_status'] = "low"
+    test_adata.obs.loc[high_entropy_cells, 'entropy_status'] = "high"
+    return test_adata
  
