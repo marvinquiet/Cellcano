@@ -18,8 +18,8 @@ from typing import TypeVar
 A = TypeVar('anndata')  ## generic for anndata
 ENC = TypeVar('OneHotEncoder')
 
-from Pyramid.models.distiller import Distiller
-from Pyramid.models.MLP import MLP
+from Cellcano.models.distiller import Distiller
+from Cellcano.models.MLP import MLP
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ Student_DIMS = [64, 16]
 BATCH_SIZE = 32
 Celltype_COLUMN = "celltype"
 PredCelltype_COLUMN = "pred_celltype"
-ENTROPY_QUANTILE = 0.4
+ENTROPY_QUANTILE = 0.4  ## how many cells are used as second-round target
 
 GPU_list = tf.config.list_physical_devices('GPU')
 logger.info("Num GPUs Available: %d" % len(GPU_list))
@@ -123,10 +123,10 @@ def _process_adata(adata, process_type='train', celltype_label='celltype'):
 
     ## handel exception when there are not enough cells or genes after filtering
     if adata.shape[0] < 3 or adata.shape[1] < 3:
-        sys.exit("Error: too few genes or cells to continue..")
+        sys.exit("Error: too few genes or cells left to continue..")
 
     ## normalization,var.genes,log1p
-    sc.pp.normalize_per_cell(adata, min_counts=0)
+    sc.pp.normalize_per_cell(adata, counts_per_cell_after=10000, min_counts=0)
     sc.pp.log1p(adata)
 
     ## cells with celltypes
@@ -135,12 +135,11 @@ def _process_adata(adata, process_type='train', celltype_label='celltype'):
         adata = adata[cells]
     return adata
 
-def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: int = 1000) -> A:
+def _select_feature(adata: A, fs_method = "F-test", num_features: int = 1000) -> A:
     '''Select features
     ---
     Input:
         - anndata
-        - tmp_dir: temporary dir for F-test
         - fs_method: F-test / noFS / seurat
     '''
     ## Feature selection
@@ -150,7 +149,7 @@ def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: 
     else:
         if num_features > adata.shape[1]:
             logger.warning("Number of features is larger than data. Pyramid will not perform feature selection.\n")
-            num_features = adata.shape[1]
+            return adata
 
     if fs_method == "F-test":
         print("Use F-test to select features.\n")
@@ -159,38 +158,53 @@ def _select_feature(adata: A, tmp_dir=None, fs_method = "F-test", num_features: 
             tmp_data = adata.X.toarray()
         else:
             tmp_data = adata.X
-        ## write out original read count matrix
-        tmp_df = pd.DataFrame(data=np.round(tmp_data, 3), 
-                index=adata.obs_names, columns=adata.var_names).T
-        tmp_df_path = tmp_dir+os.sep+"tmp_counts.csv"
-        tmp_df.to_csv(tmp_df_path)
-        ## write out cell annotations based on train
+
+        ## calculate F-test
         cell_annots = adata.obs[Celltype_COLUMN].tolist()
-        cell_annots_path = tmp_dir+os.sep+"tmp_cell_annots.txt"
-        with open(cell_annots_path, 'w') as f:
-            for cell_annot in cell_annots:
-                f.write("%s\n" % cell_annot)
-        if not os.path.exists(Ftest_Rcode):
-            logger.error("Rcode for F-test does not exist. Abort feature selection.")
-            return adata
-
-        os.system("Rscript --vanilla " + Ftest_Rcode + " "+ tmp_df_path + " " + 
-                cell_annots_path + " " + str(num_features))
-        os.system("rm {}".format(cell_annots_path))  ## remove the temporaty cell annotations
-        os.system("rm {}".format(tmp_df_path))  ## remove the temporaty counts
-
-        ftest_file = tmp_dir+os.sep+'F-test_features.txt'
-        with open(ftest_file) as f:
-            features = f.read().splitlines()
+        uniq_celltypes = set(cell_annots)
+        array_list = []
+        for celltype in uniq_celltypes:
+            idx = np.where(np.array(cell_annots) == celltype)[0].tolist()
+            array_list.append(tmp_data[idx, :])
+        F, p = scipy.stats.f_oneway(*array_list)
+        F_updated = np.nan_to_num(F)
+        sorted_idx = np.argsort(F_updated)[-num_features:]
+        features = adata.var_names[sorted_idx].tolist()
         features.sort()
         adata = adata[:, features]
+
+        ### write out original read count matrix
+        #tmp_df = pd.DataFrame(data=np.round(tmp_data, 3), 
+        #        index=adata.obs_names, columns=adata.var_names).T
+        #tmp_df_path = tmp_dir+os.sep+"tmp_counts.csv"
+        #tmp_df.to_csv(tmp_df_path)
+        ### write out cell annotations based on train
+        #cell_annots = adata.obs[Celltype_COLUMN].tolist()
+        #cell_annots_path = tmp_dir+os.sep+"tmp_cell_annots.txt"
+        #with open(cell_annots_path, 'w') as f:
+        #    for cell_annot in cell_annots:
+        #        f.write("%s\n" % cell_annot)
+        #if not os.path.exists(Ftest_Rcode):
+        #    logger.error("Rcode for F-test does not exist. Abort feature selection.")
+        #    return adata
+
+        #os.system("Rscript --vanilla " + Ftest_Rcode + " "+ tmp_df_path + " " + 
+        #        cell_annots_path + " " + str(num_features))
+        #os.system("rm {}".format(cell_annots_path))  ## remove the temporaty cell annotations
+        #os.system("rm {}".format(tmp_df_path))  ## remove the temporaty counts
+
+        #ftest_file = tmp_dir+os.sep+'F-test_features.txt'
+        #with open(ftest_file) as f:
+        #    features = f.read().splitlines()
+        #features.sort()
+        #adata = adata[:, features]
 
     if fs_method == "seurat":
         print("Use seurat in scanpy to select features.\n")
         sc.pp.highly_variable_genes(adata, n_top_genes=num_features, subset=True)
-        seurat_file = tmp_dir+os.sep+'Seurat_features.txt'
-        with open(seurat_file, 'w') as f:
-            f.writelines(adata.var_names.tolist())
+        #seurat_file = tmp_dir+os.sep+'Seurat_features.txt'
+        #with open(seurat_file, 'w') as f:
+        #    f.writelines(adata.var_names.tolist())
 
     return adata
 

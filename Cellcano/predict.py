@@ -6,10 +6,10 @@ import logging
 
 import tensorflow as tf
 import numpy as np
-from sklearn.preprocessing import OneHotEncoder
+import pandas as pd
 
 ## import my package
-from Pyramid.utils import _utils
+from Cellcano.utils import _utils
 
 ## get the logger
 logger = logging.getLogger(__name__)
@@ -21,10 +21,7 @@ def predict(args):
     if not os.path.exists(feature_file) or not os.path.exists(encoder_file):
         sys.exit("Feature file or encoder mapping does not exist! Please check your tained model was trained successfully.")
 
-    features = []
-    with open(feature_file) as f:
-        for line in f:
-            features.append(line.strip())
+    features = pd.read_csv(feature_file, sep='\t', header=0, index_col=0)
     encoders = {}
     with open(encoder_file) as f:
         for line in f:
@@ -43,7 +40,7 @@ def predict(args):
     ## fill in the data with the same order of features
     feature_idx = []
     find_cnt = 0
-    for feature in features:
+    for feature in features.index:
         find_flag = False
         for test_idx, gene in enumerate(test_adata.var_names):
             if gene == feature:
@@ -63,8 +60,14 @@ def predict(args):
         test_adata = test_adata[:, feature_idx]
     logger.info("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
 
-    test_adata = _utils._scale_data(test_adata)
+    ## scale data by test data
+    #test_adata = _utils._scale_data(test_adata)
+
+    ## scale data by train data mu/std
     test_data_mat = _utils._extract_adata(test_adata)
+    test_adata.var['mean'] = np.mean(test_data_mat, axis=0).reshape(-1, 1)
+    test_adata.var['std'] = np.std(test_data_mat, axis=0).reshape(-1, 1)
+    test_data_mat = (test_data_mat - np.array(features['mean']))/(np.array(test_adata.var['std'])/np.array(features['std']))
 
     y_pred = tf.nn.softmax(model.predict(test_data_mat)).numpy()
     pred_celltypes = _utils._prob_to_label(y_pred, encoders)

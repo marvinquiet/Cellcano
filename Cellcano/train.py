@@ -5,10 +5,11 @@ import os, sys
 import logging
 
 import anndata
+import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 
 ## import my package
-from Pyramid.utils import _utils
+from Cellcano.utils import _utils
 
 ## get the logger
 logger = logging.getLogger(__name__)
@@ -43,9 +44,15 @@ def load_train_adata(args):
         ## preprocess data and select features
         train_adata = _utils._process_adata(train_adata, process_type='train')
         logger.info("Data shape after processing: %d cells X %d genes" % (train_adata.shape[0], train_adata.shape[1]))
-        train_adata = _utils._select_feature(train_adata, tmp_dir=args.output_dir,
+        train_adata = _utils._select_feature(train_adata, 
                 fs_method=args.fs, num_features=args.num_features)
-        train_adata = _utils._scale_data(train_adata)
+        #train_adata = _utils._scale_data(train_adata)
+        ## not dividing by std
+        train_data_mat = _utils._extract_adata(train_adata)
+        train_adata.var['mean'] = np.mean(train_data_mat, axis=0).reshape(-1, 1)
+        train_adata.var['std'] = np.std(train_data_mat, axis=0).reshape(-1, 1)
+        train_data_mat = train_data_mat - np.array(train_adata.var['mean'])
+        train_adata.X = train_data_mat
         _utils._visualize_data(train_adata, args.output_dir, prefix=args.prefix)
         _utils._save_adata(train_adata, args.output_dir, prefix=args.prefix)
     return train_adata
@@ -63,7 +70,7 @@ def train_MLP(args):
         - train_adata: train anndata object
 
     '''
-    MLP_DIMS = _utils.MLP_DIMS if args.mlp_ns is None else args.mlp_ns
+    MLP_DIMS = _utils.MLP_DIMS #if args.mlp_ns is None else args.mlp_ns
 
     train_adata = load_train_adata(args)
     ## get x_train, y_train
@@ -79,11 +86,9 @@ def train_MLP(args):
     model_save_dir = args.output_dir+os.sep+args.prefix+'MLP_model'
     mlp.model.save(model_save_dir)
 
-    ## save enc information and feature information
-    with open(model_save_dir+os.sep+"features.txt", 'w') as f:
-        for gene in train_adata.var_names:
-            f.write('%s\n' % gene)
-
+    ## save feature information along with mean and standard deviation
+    train_adata.var.loc[:, ['mean', 'std']].to_csv(model_save_dir+os.sep+"features.txt", sep='\t')
+    ## save enc information
     with open(model_save_dir+os.sep+"onehot_encoder.txt", 'w') as f:
         for idx, cat in enumerate(enc.categories_[0]):
             f.write('%d:%s\n' % (idx, cat))
@@ -99,8 +104,8 @@ def train_KD(args):
         - args: user's input arguments
         - train_adata: train anndata object
     '''
-    teacher_MLP_DIMS = _utils.Teacher_DIMS if args.teacher_ns is None else args.teacher_ns
-    student_MLP_DIMS = _utils.Student_DIMS if args.student_ns is None else args.student_ns
+    teacher_MLP_DIMS = _utils.Teacher_DIMS #if args.teacher_ns is None else args.teacher_ns
+    student_MLP_DIMS = _utils.Student_DIMS #if args.student_ns is None else args.student_ns
 
     train_adata = load_train_adata(args)
     ## get x_train, y_train

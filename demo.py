@@ -1,5 +1,5 @@
 import os, argparse
-from Pyramid import preprocess, train, predict
+from Cellcano import preprocess, train, predict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -76,15 +76,15 @@ train_parser.add_argument('--fs', dest='fs',
         choices=["F-test", "noFS", "seurat"], type=str, default="F-test")
 train_parser.add_argument('--num_features', dest='num_features', 
         help="Feature selection methods.", type=int, default=1000)
-train_parser.add_argument('--teacher_ns', dest='teacher_ns', 
-        type=int, nargs='+',
-        help="Teacher network structure.")
-train_parser.add_argument('--student_ns', dest='student_ns', 
-        type=int, nargs='+',
-        help="Student network structure.")
-train_parser.add_argument('--mlp_ns', dest='mlp_ns', 
-        type=int, nargs='+',
-        help="MLP network structure.")
+#train_parser.add_argument('--teacher_ns', dest='teacher_ns', 
+#        type=int, nargs='+',
+#        help="Teacher network structure.")
+#train_parser.add_argument('--student_ns', dest='student_ns', 
+#        type=int, nargs='+',
+#        help="Student network structure.")
+#train_parser.add_argument('--mlp_ns', dest='mlp_ns', 
+#        type=int, nargs='+',
+#        help="MLP network structure.")
 
 
 ## ===========================
