@@ -103,10 +103,9 @@ predict_parser.add_argument('-i', '--input', dest='input',
 predict_parser.add_argument('--trained_model', dest='trained_model',
         type=str, required=True,
         help="Path to the trained model.")
-predict_parser.add_argument('--predict_type', dest='predict_type',
-        type=str, default="tworound_predict",
-        help="Strategy to predict cells.", 
-        choices=["direct_predict", "tworound_predict"])
+predict_parser.add_argument('--tworound', dest='tworound',
+        default=False, action="store_true",
+        help="Whether predict with two rounds.")
 predict_parser.add_argument('-o', '--output_dir', dest='output_dir', 
         type=str, default="output",
         help="Output directory.")

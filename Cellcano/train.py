@@ -46,13 +46,7 @@ def load_train_adata(args):
         logger.info("Data shape after processing: %d cells X %d genes" % (train_adata.shape[0], train_adata.shape[1]))
         train_adata = _utils._select_feature(train_adata, 
                 fs_method=args.fs, num_features=args.num_features)
-        #train_adata = _utils._scale_data(train_adata)
-        ## not dividing by std
-        train_data_mat = _utils._extract_adata(train_adata)
-        train_adata.var['mean'] = np.mean(train_data_mat, axis=0).reshape(-1, 1)
-        train_adata.var['std'] = np.std(train_data_mat, axis=0).reshape(-1, 1)
-        train_data_mat = train_data_mat - np.array(train_adata.var['mean'])
-        train_adata.X = train_data_mat
+        train_adata = _utils._scale_data(train_adata) ## center-scale
         _utils._visualize_data(train_adata, args.output_dir, prefix=args.prefix)
         _utils._save_adata(train_adata, args.output_dir, prefix=args.prefix)
     return train_adata

@@ -60,55 +60,60 @@ def predict(args):
         test_adata = test_adata[:, feature_idx]
     logger.info("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
 
-    ## scale data by test data
-    #test_adata = _utils._scale_data(test_adata)
-
-    ## scale data by train data mu/std
-    test_data_mat = _utils._extract_adata(test_adata)
-    test_adata.var['mean'] = np.mean(test_data_mat, axis=0).reshape(-1, 1)
-    test_adata.var['std'] = np.std(test_data_mat, axis=0).reshape(-1, 1)
-    test_data_mat = (test_data_mat - np.array(features['mean']))/(np.array(test_adata.var['std'])/np.array(features['std']))
+    if test_adata.shape[0] >= 1000:
+        ## center scale data by test data -> using feature information from test data and do two-step
+        test_adata = _utils._scale_data(test_adata)
+        test_data_mat = _utils._extract_adata(test_adata)
+    else:
+        ## scale data by train data mu/std
+        test_data_mat = _utils._extract_adata(test_adata)
+        test_adata.var['mean'] = np.mean(test_data_mat, axis=0).reshape(-1, 1)
+        test_adata.var['std'] = np.std(test_data_mat, axis=0).reshape(-1, 1)
+        test_data_mat = (test_data_mat - np.array(features['mean']))/np.array(features['std'])
 
     y_pred = tf.nn.softmax(model.predict(test_data_mat)).numpy()
     pred_celltypes = _utils._prob_to_label(y_pred, encoders)
     test_adata.obs[_utils.PredCelltype_COLUMN] = pred_celltypes
 
-    if args.predict_type == "direct_predict":
-        test_adata.obs.to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
+    if args.tworound:
+        ## if less than 1000 in test data
+        if test_adata.shape[0] < 1000:
+            logger.warning("Your input cell is less than 1000. For performance, we will not perform two-round strategy on your data.")
+        ## when cell number is large enough
+        else:
+            firstround_COLUMN = 'firstround_' + _utils.PredCelltype_COLUMN
+            test_adata.obs[firstround_COLUMN] = pred_celltypes
+            entropy = [-np.nansum(y_pred[i]*np.log(y_pred[i])) for i in range(y_pred.shape[0])]
+            test_adata.obs['entropy'] = entropy
+            test_adata = _utils._select_confident_cells(
+                    test_adata, celltype_col=firstround_COLUMN)
 
-    if args.predict_type == "tworound_predict":
-        firstround_COLUMN = 'firstround_' + _utils.PredCelltype_COLUMN
-        test_adata.obs[firstround_COLUMN] = pred_celltypes
-        entropy = [-np.nansum(y_pred[i]*np.log(y_pred[i])) for i in range(y_pred.shape[0])]
-        test_adata.obs['entropy'] = entropy
-        test_adata = _utils._select_confident_cells(
-                test_adata, celltype_col=firstround_COLUMN)
+            low_entropy_cells = test_adata.obs_names[np.where(test_adata.obs['entropy_status'] == 'low')].tolist()
+            high_entropy_cells = test_adata.obs_names[np.where(test_adata.obs['entropy_status'] == 'high')].tolist()
+            test_ref_adata = test_adata[low_entropy_cells]
+            test_tgt_adata = test_adata[high_entropy_cells]
 
-        low_entropy_cells = test_adata.obs_names[np.where(test_adata.obs['entropy_status'] == 'low')].tolist()
-        high_entropy_cells = test_adata.obs_names[np.where(test_adata.obs['entropy_status'] == 'high')].tolist()
-        test_ref_adata = test_adata[low_entropy_cells]
-        test_tgt_adata = test_adata[high_entropy_cells]
+            x_tgt_train = _utils._extract_adata(test_ref_adata)
+            y_tgt_train = _utils._label_to_onehot(test_ref_adata.obs.loc[low_entropy_cells, firstround_COLUMN].tolist(),
+                    encoders=encoders)
+            x_tgt_test = _utils._extract_adata(test_tgt_adata)
 
-        x_tgt_train = _utils._extract_adata(test_ref_adata)
-        y_tgt_train = _utils._label_to_onehot(test_ref_adata.obs.loc[low_entropy_cells, firstround_COLUMN].tolist(),
-                encoders=encoders)
-        x_tgt_test = _utils._extract_adata(test_tgt_adata)
+            ## teahcer/studenmt model on original celltype label
+            teacher = _utils._init_MLP(x_tgt_train, y_tgt_train, dims=_utils.Teacher_DIMS,
+                    seed=_utils.RANDOM_SEED)
+            teacher.compile()
+            teacher.fit(x_tgt_train, y_tgt_train, batch_size=_utils.BATCH_SIZE)
+            ## student model -> actually same model, just used the concept of distillation
+            student = _utils._init_MLP(x_tgt_train, y_tgt_train, dims=_utils.Student_DIMS, 
+                    seed=_utils.RANDOM_SEED)
+            # Initialize and compile distiller
+            distiller = _utils._run_distiller(x_tgt_train, y_tgt_train, 
+                    student_model=student.model,
+                    teacher_model=teacher.model)
+            y_pred_tgt = tf.nn.softmax(distiller.student.predict(x_tgt_test)).numpy()
 
-        ## teahcer/studenmt model on original celltype label
-        teacher = _utils._init_MLP(x_tgt_train, y_tgt_train, dims=_utils.Teacher_DIMS,
-                seed=_utils.RANDOM_SEED)
-        teacher.compile()
-        teacher.fit(x_tgt_train, y_tgt_train, batch_size=_utils.BATCH_SIZE)
-        ## student model -> actually same model, just used the concept of distillation
-        student = _utils._init_MLP(x_tgt_train, y_tgt_train, dims=_utils.Student_DIMS, 
-                seed=_utils.RANDOM_SEED)
-        # Initialize and compile distiller
-        distiller = _utils._run_distiller(x_tgt_train, y_tgt_train, 
-                student_model=student.model,
-                teacher_model=teacher.model)
-        y_pred_tgt = tf.nn.softmax(distiller.student.predict(x_tgt_test)).numpy()
-
-        pred_celltypes = _utils._prob_to_label(y_pred_tgt, encoders)
-        test_adata.obs.loc[high_entropy_cells, _utils.PredCelltype_COLUMN] = pred_celltypes
-        test_adata.obs.to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
+            pred_celltypes = _utils._prob_to_label(y_pred_tgt, encoders)
+            test_adata.obs.loc[high_entropy_cells, _utils.PredCelltype_COLUMN] = pred_celltypes
+ 
+    test_adata.obs.to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
 
