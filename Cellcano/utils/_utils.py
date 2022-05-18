@@ -228,7 +228,7 @@ def _visualize_data(adata, output_dir, color_columns=["celltype"],
 
     if reduction == "tSNE":
         sc.tl.tsne(adata, use_rep="X_pca",
-            learning_rate=300, perplexity=30, n_jobs=4, random_state=RANDOM_SEED)
+            learning_rate=300, perplexity=30, n_jobs=1, random_state=RANDOM_SEED)
         sc.pl.tsne(adata, color=color_columns)
         plt.tight_layout()
         plt.savefig(output_dir+os.sep+prefix+"tSNE_cluster.png")
@@ -291,7 +291,8 @@ def _init_MLP(x_train, y_train, dims=[64, 16], seed=0):
     '''
     mlp = MLP(dims)
     mlp.input_shape = (x_train.shape[1], )
-    mlp.n_classes = len(set(y_train.argmax(1)))
+    #mlp.n_classes = len(set(y_train.argmax(1)))
+    mlp.n_classes = y_train.shape[1]
     mlp.random_state = seed
     mlp.init_MLP_model()  ## init the model
     return mlp

@@ -35,8 +35,13 @@ def load_train_adata(args):
 
         common_cells = set(train_adata.obs_names).intersection(set(metadata.index))
         logger.info("%d common cells found between input data and metadata." % len(common_cells))
+
+        if len(common_cells) == 0:
+            sys.exit("No common cells are found between input data and metadata, please check your data!")
+
         if len(common_cells) < 100:
             logger.warning("There are too few cells. Pyramid might not be accurate.")
+
         train_adata = train_adata[list(common_cells)]
         train_adata.obs = train_adata.obs.merge(metadata, 
                 left_on="barcode", right_index=True, how='left')
