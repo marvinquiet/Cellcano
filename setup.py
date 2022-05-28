@@ -5,7 +5,7 @@ with open("README.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name='Cellcano',
-    version='0.0.1',
+    version='0.0.2',
     author='Wenjing Ma',
     author_email='wenjing.ma@emory.edu',
     url='https://github.com/marvinquiet/Cellcano',
@@ -21,5 +21,13 @@ setup(
     entry_points={
         "console_scripts": ["Cellcano=Cellcano.main:cli"]
         },
-    python_requires=">=3.8"
+    python_requires=">=3.8",
+    install_requires=[
+        'tensorflow == 2.4.1',
+        'anndata == 0.7.4',
+        'scanpy == 1.8.2',
+        'rpy2',
+        'keras',
+        'matplotlib'
+        ]
 )
