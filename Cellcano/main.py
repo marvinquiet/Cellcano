@@ -109,9 +109,6 @@ def main():
         preprocess.preprocess(args)
     ## training process 
     if "train" == args.cmd_choice:
-        import sys
-        print(sys.path)
- 
         from Cellcano import train
         if not os.path.exists(args.output_dir):
             logger.info("Creating output directory: %s" % args.output_dir)
