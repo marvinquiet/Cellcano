@@ -1,11 +1,12 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+from Cellcano import __version__
 
 with open("README.txt", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name='Cellcano',
-    version='0.0.2',
+    version=__version_,
     author='Wenjing Ma',
     author_email='wenjing.ma@emory.edu',
     url='https://github.com/marvinquiet/Cellcano',
@@ -17,7 +18,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/plain",
     license='MIT', 
-    packages=['Cellcano'],
+    packages=find_packages(),
     entry_points={
         "console_scripts": ["Cellcano=Cellcano.main:main"]
         },
