@@ -23,7 +23,6 @@ from Cellcano.models.MLP import MLP
 
 logger = logging.getLogger(__name__)
 
-Ftest_Rcode = "Pyramid/Rcode/Ftest_selection.R"
 RANDOM_SEED = 1993
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
@@ -144,11 +143,11 @@ def _select_feature(adata: A, fs_method = "F-test", num_features: int = 1000) ->
     '''
     ## Feature selection
     if fs_method == "noFS":
-        logger.info("Pyramid will not perform feature selection.\n")
+        logger.info("Cellcano will not perform feature selection.\n")
         return adata
     else:
         if num_features > adata.shape[1]:
-            logger.warning("Number of features is larger than data. Pyramid will not perform feature selection.\n")
+            logger.warning("Number of features is larger than data. Cellcano will not perform feature selection.\n")
             return adata
 
     if fs_method == "F-test":

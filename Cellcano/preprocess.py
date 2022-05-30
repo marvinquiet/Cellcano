@@ -23,6 +23,8 @@ def _set_ArchR(genome: str,
     ArchR_thread_func(threads=thread)
     seed_func = robjects.r['set.seed']
     seed_func(seed)
+
+    ## if the genome is not installed by BiocManager, have to install it first
     ArchR_genome_func = robjects.r['addArchRGenome']
     ArchR_genome_func(genome)
 

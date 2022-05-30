@@ -40,7 +40,7 @@ def load_train_adata(args):
             sys.exit("No common cells are found between input data and metadata, please check your data!")
 
         if len(common_cells) < 100:
-            logger.warning("There are too few cells. Pyramid might not be accurate.")
+            logger.warning("There are too few cells. Cellcano might not be accurate.")
 
         train_adata = train_adata[list(common_cells)]
         train_adata.obs = train_adata.obs.merge(metadata, 

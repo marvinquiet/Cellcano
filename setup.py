@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from Cellcano import __version__
 
-with open("README.txt", "r", encoding="utf-8") as fh:
+with open("DESCRIPTION", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
