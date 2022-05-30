@@ -59,6 +59,9 @@ If you need ArchR to process your raw scATAC-seq data to gene score matrix, plea
 ## install R environment
 conda install -c conda-forge r-base=4.1.1
 conda install -c conda-forge r-devtools
+
+## install an additional package to access R in Python
+pip install rpy2
 ```
 
 Then, enter in R console by typing `R` or in your Rstudio:
