@@ -2,7 +2,7 @@
 
 **Authors:** Wenjing Ma (wenjing.ma@emory.edu), Dr. Hao Wu (hao.wu@emory.edu), Emory University
 
-**Latest revision:** 05-27-2022
+**Latest revision:** 05-30-2022
 
 In this tutorial, we will guide you through Cellcano, a supervised cell type annotation (celltyping) tool in scATAC-seq. We will use human Peripheral Blood Mononuclear Cells (PBMC) datasets as examples. 
 
@@ -16,14 +16,23 @@ To use Cellcano, you need to first install Python and we recommend Python 3.8. I
 
 
 
-We recommend [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to easily install our package. Once your conda is installed, the following commands can be used to create the environment.
+If you already have your R and Python installed, you can simply use `pip install Cellcano` to install our package. 
+
+
+
+Otherwise, we recommend [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to easily install our package. Once your conda is installed, the following commands can be used to create the environment.
 
 ```shell
 ## create a conda environment with Python installed
 conda create -n Cellcano python=3.8.12
-
 ## activate the created Cellcano environment
 conda activate Cellcano
+
+## install R environment
+## If you already have R and devtools installed, you can ignore the conda install
+conda install -c conda-forge r-base=4.1.1
+conda install -c conda-forge r-devtools
+# conda install -c bioconda bioconductor-rhdf5lib  ## you might need this if installing ArchR has a rhdf5lib error
 
 ## install Cellcano package
 pip install Cellcano
@@ -49,22 +58,7 @@ optional arguments:
 
 
 
-
-
-
-
-If you need ArchR to process your raw scATAC-seq data to gene score matrix, please also install R environment and the ArchR package.
-
-```shell
-## install R environment
-conda install -c conda-forge r-base=4.1.1
-conda install -c conda-forge r-devtools
-
-## install an additional package to access R in Python
-pip install rpy2
-```
-
-Then, enter in R console by typing `R` or in your Rstudio:
+If you need ArchR to process your raw scATAC-seq data to gene score matrix, please also install the ArchR package. You can either enter in R console by typing `R` or in your Rstudio:
 
 ```R
 ## install ArchR according to: https://www.archrproject.com/

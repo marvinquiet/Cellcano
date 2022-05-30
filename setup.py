@@ -31,5 +31,6 @@ setup(
         'numpy == 1.19.2',
         'h5py == 2.10.0',
         'keras',
+        'rpy2'
         ]
 )
