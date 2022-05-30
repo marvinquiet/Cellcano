@@ -98,7 +98,7 @@ wget https://www.dropbox.com/s/d7e7wcb4nuy5l2q/GSM3722015_PBMC_Rep1_curated_meta
 Next, we use Cellcano to call ArchR to process the fragment file into gene score matrix. The `-i` option scans files ending with `fragments.tsv.gz` or `.bam` and load the files to ArchR.`-g` describes which genome will be used. `--threads` indicates how many threads will be used to run ArchR. ArchR would take around 30 mins to process the data with threads as 4. 
 
 ```shell
-python demo.py preprocess -i train_data -o train_data -g hg19 --threads 4
+Cellcano preprocess -i train_data -o train_data -g hg19 --threads 4
 
 ## The output will be..
 Output will be written to train_data
@@ -178,7 +178,7 @@ With the preprocessed reference gene score matrix, we can use it as input for tr
 
 ```shell
 ## run the training process
-python demo.py train -i train_data/ArchR_genescore -m train_data/GSM3722015_PBMC_Rep1_curated_metadata.csv -o output --prefix PBMC_Rep1_trained 
+Cellcano train -i train_data/ArchR_genescore -m train_data/GSM3722015_PBMC_Rep1_curated_metadata.csv -o output --prefix PBMC_Rep1_trained 
 
 ## The output will be
 Skipping registering GPU devices...
@@ -208,7 +208,7 @@ We use the trained model to predict on the target dataset. When the input data e
 
 ```shell
 ## run the prediction process
-python demo.py predict -i test_data/FACS5K_genescore.csv --trained_model output/PBMC_Rep1_trainedMLP_model -o output --prefix predict_FACS --tworound
+Cellcano predict -i test_data/FACS5K_genescore.csv --trained_model output/PBMC_Rep1_trainedMLP_model -o output --prefix predict_FACS --tworound
 
 ## The output will be
 Skipping registering GPU devices...
