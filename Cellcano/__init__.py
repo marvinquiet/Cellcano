@@ -3,6 +3,9 @@
 import os, logging
 from datetime import datetime
 
+## Version
+__version__ = '0.0.2'
+
 ## create a logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
