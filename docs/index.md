@@ -2,13 +2,78 @@
 
 **Authors:** Wenjing Ma (wenjing.ma@emory.edu), Dr. Hao Wu (hao.wu@emory.edu), Emory University
 
-**Latest revision:** 05-15-2022
+**Latest revision:** 05-27-2022
 
 In this tutorial, we will guide you through Cellcano, a supervised cell type annotation (celltyping) tool in scATAC-seq. We will use human Peripheral Blood Mononuclear Cells (PBMC) datasets as examples. 
 
 ![img](workflow.png)
 
 We are aiming at accurate and efficient celltyping in single cell genomics, including scRNA-seq, scATAC-seq, scBS-seq, etc. If you are interested, stay tuned!
+
+### Installation
+
+To use Cellcano, you need to first install Python and we recommend Python 3.8. In addition, Cellcano embeds [ArchR](https://www.archrproject.com/) to process raw scATAC-seq data (fragment files or bam files). If you want to use the `preprocess` option in Cellcano to convert the raw scATAC-seq data to a gene score matrix, an R environment along with the installation of ArchR package is a must.
+
+
+
+We recommend [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to easily install our package. Once your conda is installed, the following commands can be used to create the environment.
+
+```shell
+## create a conda environment with Python installed
+conda create -n Cellcano python=3.8.12
+
+## activate the created Cellcano environment
+conda activate Cellcano
+
+## install Cellcano package
+pip install Cellcano
+
+## Use Cellcano help package to check
+Cellcano -h
+
+## Then you will see the following console printout
+usage: Cellcano [-h] {preprocess,train,predict} ...
+
+Cellcano: a supervised celltyping pipeline for single-cell omics.
+
+positional arguments:
+  {preprocess,train,predict}
+                        sub-command help.
+    preprocess          Run ArchR to preprocess raw input data (*fragments.tsv.gz, *.bam) to gene score.
+    train               Train a Cellcano model.
+    predict             Use Cellcano model to predict cell types.
+
+optional arguments:
+  -h, --help            show this help message and exit
+```
+
+
+
+
+
+
+
+If you need ArchR to process your raw scATAC-seq data to gene score matrix, please also install R environment and the ArchR package.
+
+```shell
+## install R environment
+conda install -c conda-forge r-base=4.1.1
+conda install -c conda-forge r-devtools
+```
+
+Then, enter in R console by typing `R` or in your Rstudio:
+
+```R
+## install ArchR according to: https://www.archrproject.com/
+## install BiocManager
+install.packages("BiocManager")
+## install ArchR package
+devtools::install_github("GreenleafLab/ArchR", ref="master", repos = BiocManager::repositories())
+library(ArchR)
+ArchR::installExtraPackages()
+```
+
+*****
 
 ### 1. Download and process sample scATAC-seq raw data
 
