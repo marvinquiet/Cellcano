@@ -6,7 +6,7 @@ with open("README.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name='Cellcano',
-    version=__version_,
+    version=__version__,
     author='Wenjing Ma',
     author_email='wenjing.ma@emory.edu',
     url='https://github.com/marvinquiet/Cellcano',
