@@ -58,7 +58,11 @@ def predict(args):
 
     if -1 not in feature_idx:
         test_adata = test_adata[:, feature_idx]
-    logger.info("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
+        logger.info("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
+    else:
+        logger.error("Some features in the reference dataset are not found in the target dataset.")
+        sys.exit(1)
+        ## TODO: or maybe I should fill in 0 or average of the profiles for those missing genes
 
     if test_adata.shape[0] >= 1000:
         ## center scale data by test data -> using feature information from test data and do two-step

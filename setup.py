@@ -19,15 +19,16 @@ setup(
     license='MIT', 
     packages=['Cellcano'],
     entry_points={
-        "console_scripts": ["Cellcano=Cellcano.main:cli"]
+        "console_scripts": ["Cellcano=Cellcano.main:main"]
         },
     python_requires=">=3.8",
     install_requires=[
         'tensorflow == 2.4.1',
+        'six~=1.15.0',
         'anndata == 0.7.4',
         'scanpy == 1.8.2',
-        'rpy2',
+        'numpy == 1.19.2',
+        'h5py == 2.10.0',
         'keras',
-        'matplotlib'
         ]
 )
