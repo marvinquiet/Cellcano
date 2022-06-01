@@ -1,8 +1,8 @@
 ## Cellcano Tutorial
 
-**Authors:** Wenjing Ma (wenjing.ma@emory.edu), Dr. Hao Wu (hao.wu@emory.edu), Emory University
+**Authors:** Wenjing Ma (wenjing.ma@emory.edu), Jiaying Lu (jiaying.lu@emory.edu), Dr. Hao Wu (hao.wu@emory.edu), Emory University
 
-**Latest revision:** 05-30-2022
+**Latest revision:** 06-01-2022
 
 In this tutorial, we will guide you through Cellcano, a supervised cell type annotation (celltyping) tool in scATAC-seq. We will use human Peripheral Blood Mononuclear Cells (PBMC) datasets as examples. 
 
@@ -14,29 +14,13 @@ We are aiming at accurate and efficient celltyping in single cell genomics, incl
 
 To use Cellcano, you need to first install Python and we recommend Python 3.8. In addition, Cellcano embeds [ArchR](https://www.archrproject.com/) to process raw scATAC-seq data (fragment files or bam files). If you want to use the `preprocess` option in Cellcano to convert the raw scATAC-seq data to a gene score matrix, an R environment along with the installation of ArchR package is a must.
 
+If you already have your R and Python installed, you can simply use `pip install Cellcano` to install our package and then follow the [ArchR installation](https://www.archrproject.com/) to have the ArchR package installed.
 
+Another option which we recommend is to use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to easily install our package. Once your get your conda installed, the command`conda install -c marvinquiet cellcano-all ` can be used to directly install all the environments you need.
 
-If you already have your R and Python installed, you can simply use `pip install Cellcano` to install our package. 
-
-
-
-Otherwise, we recommend [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to easily install our package. Once your conda is installed, the following commands can be used to create the environment.
+Once you have the Cellcano package successfully installed, you can test by the following command.
 
 ```shell
-## create a conda environment with Python installed
-conda create -n Cellcano python=3.8.12
-## activate the created Cellcano environment
-conda activate Cellcano
-
-## install R environment
-## If you already have R and devtools installed, you can ignore the conda install
-conda install -c conda-forge r-base=4.1.1
-conda install -c conda-forge r-devtools
-# conda install -c bioconda bioconductor-rhdf5lib  ## you might need this if installing ArchR has a rhdf5lib error
-
-## install Cellcano package
-pip install Cellcano
-
 ## Use Cellcano help package to check
 Cellcano -h
 
@@ -54,20 +38,6 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-```
-
-
-
-If you need ArchR to process your raw scATAC-seq data to gene score matrix, please also install the ArchR package. You can either enter in R console by typing `R` or in your Rstudio:
-
-```R
-## install ArchR according to: https://www.archrproject.com/
-## install BiocManager
-install.packages("BiocManager")
-## install ArchR package
-devtools::install_github("GreenleafLab/ArchR", ref="master", repos = BiocManager::repositories())
-library(ArchR)
-ArchR::installExtraPackages()
 ```
 
 *****
