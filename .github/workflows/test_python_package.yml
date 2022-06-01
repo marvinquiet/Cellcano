@@ -1,10 +1,10 @@
-name: Test Python package
+name: Test Conda Package
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ master ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ master ]
   workflow_dispatch:
     inputs:
       logLevel:
@@ -23,14 +23,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9"]
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+    - name: Install Conda environment with Micromamba
+      uses: mamba-org/provision-with-micromamba@main
       with:
-        python-version: ${{ matrix.python-version }}
+          environment-file: false
+          environment-name: env-py${{ matrix.python-version}}
+          channels: default,conda-forge,marvinquiet
+          extra-specs: |
+            python=${{ matrix.python-version }}
+            cellcano-base
     - name: Run Unittests
       run: |
         python -m unittest
