@@ -1,0 +1,45 @@
+{% set version = "0.0.2" %}
+
+package:
+  name: cellcano-{{ bld_opt }}
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python {{ python }}
+    - pip
+  run:
+    - python
+    - conda-forge::r-base ==4.1.1    # [bld_opt=='all']
+    - conda-forge::r-rlang >=1.0.0   # [bld_opt=='all']
+    - conda-forge::r-devtools        # [bld_opt=='all']
+    - conda-forge::r-biocmanager     # [bld_opt=='all']
+    - conda-forge::rpy2              # [bld_opt=='all']
+    - tensorflow ==2.4.1             
+    - six ~=1.15.0
+    - conda-forge::anndata ==0.7.4
+    - scanpy ==1.8.2
+    - numpy ==1.19.2
+    - h5py ==2.10.0
+    - keras
+  
+test:
+  imports:
+    - Cellcano
+
+about:
+  home: https://marvinquiet.github.io/Cellcano/
+  license: MIT
+  summary: Supervised cell type identification in single-cell genomics data
+
+extra:
+  maintainers:
+    - Wenjing Ma (wenjing.ma@emory.edu)
+    - Jiaying Lu (jiaying.lu@emory.edu)
