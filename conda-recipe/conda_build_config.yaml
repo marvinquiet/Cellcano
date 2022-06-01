@@ -1,0 +1,5 @@
+python:
+  - 3.8
+bld_opt:
+  - all
+  - base
