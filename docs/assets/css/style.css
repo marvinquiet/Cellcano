@@ -1,0 +1,36 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+header {
+  width:120px;
+  float:left;
+  position:fixed;
+  -webkit-font-smoothing:subpixel-antialiased;
+}
+
+ul.downloads {
+  list-style:none;
+  height:40px;
+  padding:0;
+  background: #f4f4f4;
+  border-radius:5px;
+  border:1px solid #e0e0e0;
+  width:120px;
+}
+
+footer {
+  width:120px;
+  float:left;
+  position:fixed;
+  bottom:50px;
+  -webkit-font-smoothing:subpixel-antialiased;
+}
+
+section {
+  width:650px;
+  float:right;
+  padding-bottom:50px;
+}
+
