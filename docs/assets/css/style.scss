@@ -3,8 +3,13 @@
 
 @import "{{ site.theme }}";
 
+.wrapper {
+  width:90%;
+  margin:0 auto;
+}
+
 header {
-  width:120px;
+  width:15%;
   float:left;
   position:fixed;
   -webkit-font-smoothing:subpixel-antialiased;
@@ -12,25 +17,26 @@ header {
 
 ul.downloads {
   list-style:none;
-  height:40px;
+  height:10%;
   padding:0;
   background: #f4f4f4;
-  border-radius:5px;
+  border-radius:1%;
   border:1px solid #e0e0e0;
-  width:120px;
+  width:15%;
 }
 
 footer {
-  width:120px;
+  width:15%;
   float:left;
   position:fixed;
-  bottom:50px;
+  bottom:5%;
   -webkit-font-smoothing:subpixel-antialiased;
 }
 
 section {
-  width:650px;
+  width:75%;
   float:right;
-  padding-bottom:50px;
+  padding-bottom:5%;
+  padding-left:10%
 }
 
