@@ -1,0 +1,42 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+.wrapper {
+  width:90%;
+  margin:0 auto;
+}
+
+header {
+  width:15%;
+  float:left;
+  position:fixed;
+  -webkit-font-smoothing:subpixel-antialiased;
+}
+
+ul.downloads {
+  list-style:none;
+  height:10%;
+  padding:0;
+  background: #f4f4f4;
+  border-radius:1%;
+  border:1px solid #e0e0e0;
+  width:15%;
+}
+
+footer {
+  width:15%;
+  float:left;
+  position:fixed;
+  bottom:5%;
+  -webkit-font-smoothing:subpixel-antialiased;
+}
+
+section {
+  width:75%;
+  float:right;
+  padding-bottom:5%;
+  padding-left:10%
+}
+
