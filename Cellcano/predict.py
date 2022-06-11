@@ -79,7 +79,7 @@ def predict(args):
     pred_celltypes = _utils._prob_to_label(y_pred, encoders)
     test_adata.obs[_utils.PredCelltype_COLUMN] = pred_celltypes
 
-    if args.tworound:
+    if not args.oneround:
         ## if less than 1000 in test data
         if test_adata.shape[0] < 1000:
             logger.warning("Your input cell is less than 1000. For performance, we will not perform two-round strategy on your data.")

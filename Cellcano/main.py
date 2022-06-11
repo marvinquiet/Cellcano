@@ -86,9 +86,9 @@ def parse_args():
     predict_parser.add_argument('--trained_model', dest='trained_model',
             type=str, required=True,
             help="Path to the trained model.")
-    predict_parser.add_argument('--tworound', dest='tworound',
+    predict_parser.add_argument('--oneround', dest='oneround',
             default=False, action="store_true",
-            help="Whether predict with two rounds.")
+            help="Whether doing a direct predict. If not specified, we will do two-round prediction by default.")
     predict_parser.add_argument('-o', '--output_dir', dest='output_dir', 
             type=str, default="output",
             help="Output directory.")
