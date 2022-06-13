@@ -346,13 +346,13 @@ g
 
 ```
 
-The Sankey plot for  this example data is shown below:
+The Sankey plot for this example data is shown below:
 
-<img src="predict_FACS_sankey.png" width=70%>
+<img src="predict_FACS_sankey.png" width="70%">
 
 In the Sankey plot, the left nodes are cells with provided ground truth cell types in the target dataset and the right nodes are the same set of cells with predicted cell types from Cellcano.  As shown in both the Sankey plot and the confusion matrix, we can tell that most of the cells are correctly predicted. There are some prediction errors among CD4 T, CD8 T and NK cells, because they have similar profiles and are difficult to be discriminated (shown in the tSNE plot below, where cells are colored by the ground truth labels).
 
-<img src="/Users/marvin/Dropbox/Celltyping/Cellcano/manual/FACS_tSNE.png" width=70%>
+<img src="FACS_tSNE.png" width="70%">
 
 ### Conclusion
 
