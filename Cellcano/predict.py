@@ -118,6 +118,8 @@ def predict(args):
 
             pred_celltypes = _utils._prob_to_label(y_pred_tgt, encoders)
             test_adata.obs.loc[high_entropy_cells, _utils.PredCelltype_COLUMN] = pred_celltypes
- 
-    test_adata.obs.to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
+            ## select certain columns and store to the file
+            test_adata.obs[['pred_celltype', 'firstround_pred_celltype', 'entropy']].to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
+    else:
+        test_adata.obs[['pred_celltype']].to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
 
