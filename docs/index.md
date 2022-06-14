@@ -4,7 +4,7 @@
 
 **Maintainer:** [Wenjing Ma](https://marvinquiet.github.io/) (wenjing.ma@emory.edu)
 
-**Latest revision:** 06/10/2022
+**Latest revision:** 06/14/2022
 
 ### Introduction
 
@@ -31,11 +31,7 @@ The above is a workflow figure illustrating how Cellcano works. Cellcano is base
 pip install Cellcano
 ```
 
-__Alternatively__, one can use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to install Cellcano and to manage the environment. When conda is installed, the following command can be used to directly install all required environments, including R, Python and Cellcano. Note that the manual installation of ArchR is still needed.
-
-```shell
-conda install -y -c marvinquiet cellcano-all=1.0.2
-```
+<!-- Alternatively, one can use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to install Cellcano and to manage the environment. When conda is installed, the following command can be used to directly install all required environments, including R, Python and Cellcano. Note that the manual installation of ArchR is still needed. ```conda install -y -c marvinquiet cellcano-all=1.0.2``` -->
 
 **Step 4**: If you have successfully installed Cellcano, you can try the following command:
 
@@ -78,7 +74,7 @@ conda activate Cellcano
 ## install Cellcano either by
 conda install -c conda-forge r-base=4.0  ## this will install R
 
-### these might be needed if errors occur when installing ArchRlibra
+### these might be system pacakges which are needed if errors occur when installing ArchR
 # conda install -c conda-forge r-devtools  ## this will install R devtools package which is a prerequisite for installing ArchR when directly installing devtools package fails
 # conda install -c conda-forge r-cairo ## this will install R cairo package which is a prerequisite for ArchR
 # conda install -c bioconda bioconductor-rhdf5 ## this will install R rhdf5 package which is another prerequisite for installing ArchR
@@ -306,7 +302,7 @@ We will use R to check the prediction results. We first look at the confusion ma
 ## read in predicted cell  types
 pred_df = read.csv("output/predict_FACScelltypes.csv", header=T, row.names=1)
 ## obtain ground truth cell type labels for the FACS target data
-pred_df$celltype = sapply(strsplit(pred_df$barcode, '_'), '[', 3) 
+pred_df$celltype = sapply(strsplit(rownames(pred_df), '_'), '[', 3) 
 
 ## the confusion table is shown below
 table(pred_df$pred_celltype, pred_df$celltype)
