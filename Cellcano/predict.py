@@ -29,7 +29,7 @@ def predict(args):
             encoders[int(line_info[0])] = line_info[1]
 
     ## load input data
-    logger.info("Loading data... \n This may take a while depending on your data size..")
+    print("Loading data... \n This may take a while depending on your data size..")
     if '.csv' in args.input:
         test_adata = _utils._csv_data_loader(args.input)
     else:
@@ -52,15 +52,15 @@ def predict(args):
             feature_idx.append(-1)
 
     if find_cnt < 0.7*len(features):
-        logger.warning("The common feature space between reference dataset and target dataset is too few with %d genes.\n This will result in inaccurate prediction." % find_cnt)
+        print("The common feature space between reference dataset and target dataset is too few with %d genes.\n This will result in inaccurate prediction." % find_cnt)
     else:
-        logger.info("Common feature space between reference and target: %d genes" % find_cnt)
+        print("Common feature space between reference and target: %d genes" % find_cnt)
 
     if -1 not in feature_idx:
         test_adata = test_adata[:, feature_idx]
-        logger.info("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
+        print("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
     else:
-        logger.error("Some features in the reference dataset are not found in the target dataset.")
+        print("Some features in the reference dataset are not found in the target dataset.")
         sys.exit(1)
         ## TODO: or maybe I should fill in 0 or average of the profiles for those missing genes
 
@@ -82,7 +82,8 @@ def predict(args):
     if not args.oneround:
         ## if less than 1000 in test data
         if test_adata.shape[0] < 1000:
-            logger.warning("Your input cell is less than 1000. For performance, we will not perform two-round strategy on your data.")
+            print("Your input cell is less than 1000. For performance, we will not perform two-round strategy on your data.")
+            test_adata.obs[['pred_celltype']].to_csv(args.output_dir+os.sep+args.prefix+'celltypes.csv')
         ## when cell number is large enough
         else:
             firstround_COLUMN = 'firstround_' + _utils.PredCelltype_COLUMN
