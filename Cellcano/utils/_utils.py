@@ -312,7 +312,7 @@ def _select_confident_cells(adata, celltype_col):
         num_cells = math.ceil(ENTROPY_QUANTILE*celltype_df.shape[0])
         if len(cells) > num_cells:
             random.seed(RANDOM_SEED)
-            selected_cells = sample(cells, num_cells)
+            selected_cells = random.sample(cells, num_cells)
         else:
             selected_cells = cells
         low_entropy_cells.extend(selected_cells)
