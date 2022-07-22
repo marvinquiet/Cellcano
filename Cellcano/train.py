@@ -2,7 +2,6 @@
 Functions related to train models
 '''
 import os, sys 
-import logging
 
 import anndata
 import numpy as np
@@ -12,35 +11,37 @@ from sklearn.preprocessing import OneHotEncoder
 from Cellcano.utils import _utils
 
 ## get the logger
-logger = logging.getLogger(__name__)
-
+#import logging
+#logger = logging.getLogger(__name__)
 
 def load_train_adata(args):
     ''' Load training data
     '''
     if args.anndata is not None:
-        logger.info("Load pre-processed anndata h5ad file..")
+        print("Load pre-processed anndata h5ad file..")
         train_adata = anndata.read_h5ad(args.anndata)
     else:
         if args.input is None or args.metadata is None:
             sys.exit("Please make sure that both gene score matrix and metadata are provided!")
 
         ## load input data
-        logger.info("Loading data... \n This may take a while depending on your data size..")
+        print("Loading data... \n This may take a while depending on your data size..")
         if '.csv' in args.input:
             train_adata = _utils._csv_data_loader(args.input)
         else:
             train_adata = _utils._COOmtx_data_loader(args.input)
         metadata = _utils._metadata_loader(args.metadata)
+        if _utils.Celltype_COLUMN not in metadata.columns:
+            sys.exit("Column '%s' is not found in metadata. Please make sure to include cell type information in the metadata." % _utils.Celltype_COLUMN)
 
         common_cells = set(train_adata.obs_names).intersection(set(metadata.index))
-        logger.info("%d common cells found between input data and metadata." % len(common_cells))
+        print("%d common cells found between input data and metadata." % len(common_cells))
 
         if len(common_cells) == 0:
             sys.exit("No common cells are found between input data and metadata, please check your data!")
 
         if len(common_cells) < 100:
-            logger.warning("There are too few cells. Cellcano might not be accurate.")
+            print("There are too few cells. Cellcano might not be accurate.")
 
         train_adata = train_adata[list(common_cells)]
         train_adata.obs = train_adata.obs.merge(metadata, 
@@ -48,7 +49,7 @@ def load_train_adata(args):
 
         ## preprocess data and select features
         train_adata = _utils._process_adata(train_adata, process_type='train')
-        logger.info("Data shape after processing: %d cells X %d genes" % (train_adata.shape[0], train_adata.shape[1]))
+        print("Data shape after processing: %d cells X %d genes" % (train_adata.shape[0], train_adata.shape[1]))
         train_adata = _utils._select_feature(train_adata, 
                 fs_method=args.fs, num_features=args.num_features)
         train_adata = _utils._scale_data(train_adata) ## center-scale
@@ -76,7 +77,7 @@ def train_MLP(args):
     x_train = _utils._extract_adata(train_adata)
     enc = OneHotEncoder(handle_unknown='ignore')
     y_train = enc.fit_transform(train_adata.obs[[_utils.Celltype_COLUMN]]).toarray()
-    logger.debug("Categories information: ", enc.categories_[0])
+    print("Cell type categories: ", enc.categories_[0])
 
     mlp = _utils._init_MLP(x_train, y_train, dims=MLP_DIMS,
             seed=_utils.RANDOM_SEED)
@@ -111,7 +112,7 @@ def train_KD(args):
     x_train = _utils._extract_adata(train_adata)
     enc = OneHotEncoder(handle_unknown='ignore')
     y_train = enc.fit_transform(train_adata.obs[[_utils.Celltype_COLUMN]]).toarray()
-    logger.debug("Categories information: ", enc.categories_)
+    print("Cell type categories: ", enc.categories_)
 
     ## train a KD model
     teacher = _utils._init_MLP(x_train, y_train, dims=teacher_MLP_DIMS, 

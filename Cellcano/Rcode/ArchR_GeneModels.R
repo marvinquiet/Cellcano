@@ -1,4 +1,4 @@
-work_dir = "/projects/compbio/users/wma36/data/GSE129785_scATACseq"
+work_dir = "~/data/GSE129785_scATACseq"
 setwd(work_dir)
 
 model_dir = file.path(work_dir, "ArchR_GeneModels")

@@ -1,6 +1,6 @@
 ## RSPH Seurat environment
 ## Try a different naming scheme
-workDir = "/projects/compbio/users/wma36/data/GSE129785_scATACseq"
+workDir = "~/data/GSE129785_scATACseq"
 setwd(workDir)
 
 modelDir = file.path(workDir, "ArchR_GeneModels")

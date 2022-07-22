@@ -1,6 +1,4 @@
-import os, argparse
-import logging
-logger = logging.getLogger(__name__)
+import os, sys, argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Cellcano: a supervised celltyping pipeline for single-cell omics.",
@@ -57,7 +55,7 @@ def parse_args():
             type=str,
             help="Cellcano provides an option to load processed anndata object generated previously to reduce loading time.")
     train_parser.add_argument('--model', dest='model',
-            type=str, default='MLP', choices=['MLP', 'KD', 'ADDA'],
+            type=str, default='MLP', choices=['MLP', 'KD'],
             help="Model used to train the data.")
     train_parser.add_argument('-o', '--output_dir', dest='output_dir', 
             type=str, default="output",
@@ -69,7 +67,7 @@ def parse_args():
             help="Feature selection methods.", 
             choices=["F-test", "noFS", "seurat"], type=str, default="F-test")
     train_parser.add_argument('--num_features', dest='num_features', 
-            help="Feature selection methods.", type=int, default=1000)
+            help="Feature selection methods.", type=int, default=3000)
 
     ## ===========================
     # Parser for predicting gene score matrix
@@ -97,7 +95,7 @@ def parse_args():
             help="Output prefix.")
     
     args = parser.parse_args()
-    logger.debug("User input arguments: ", args)
+    print("User input arguments: ", args)
     return args
 
 
@@ -111,18 +109,15 @@ def main():
     if "train" == args.cmd_choice:
         from Cellcano import train
         if not os.path.exists(args.output_dir):
-            logger.info("Creating output directory: %s" % args.output_dir)
+            print("Creating output directory: %s" % args.output_dir)
             os.makedirs(args.output_dir, exist_ok=True)
         if args.model == "KD":
             train.train_KD(args)
-        if args.model == "ADDA":
-            ## For future API
-            pass
         if args.model == "MLP":
             train.train_MLP(args)
     ## prediction process
     if "predict" == args.cmd_choice:
         from Cellcano import predict
         if not os.path.exists(args.trained_model):
-            logger.error("The input model does not exist.")
+            sys.exit("The trained does not exist! Please run 'Cellcano train' first to produce a trained model.")
         predict.predict(args)

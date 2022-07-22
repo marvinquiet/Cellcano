@@ -1,6 +1,5 @@
 import os
 import math
-import logging
 import anndata
 import numpy as np
 import pandas as pd
@@ -21,22 +20,22 @@ ENC = TypeVar('OneHotEncoder')
 from Cellcano.models.distiller import Distiller
 from Cellcano.models.MLP import MLP
 
-logger = logging.getLogger(__name__)
+## get logger
+#import logging
+#logger = logging.getLogger(__name__)
 
 RANDOM_SEED = 1993
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 
-MLP_DIMS = [64, 16]
-Teacher_DIMS = [64, 16]
-Student_DIMS = [64, 16]
+MLP_DIMS = Teacher_DIMS = Student_DIMS = [64, 16]
 BATCH_SIZE = 32
 Celltype_COLUMN = "celltype"
 PredCelltype_COLUMN = "pred_celltype"
 ENTROPY_QUANTILE = 0.4  ## how many cells are used as second-round target
 
 GPU_list = tf.config.list_physical_devices('GPU')
-logger.info("Num GPUs Available: %d" % len(GPU_list))
+print("Num GPUs Available: %d" % len(GPU_list))
 if len(GPU_list) == 0:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 else:
@@ -134,7 +133,7 @@ def _process_adata(adata, process_type='train', celltype_label='celltype'):
         adata = adata[cells]
     return adata
 
-def _select_feature(adata: A, fs_method = "F-test", num_features: int = 1000) -> A:
+def _select_feature(adata: A, fs_method = "F-test", num_features: int = 3000) -> A:
     '''Select features
     ---
     Input:
@@ -143,11 +142,11 @@ def _select_feature(adata: A, fs_method = "F-test", num_features: int = 1000) ->
     '''
     ## Feature selection
     if fs_method == "noFS":
-        logger.info("Cellcano will not perform feature selection.\n")
+        print("Cellcano will not perform feature selection.\n")
         return adata
     else:
         if num_features > adata.shape[1]:
-            logger.warning("Number of features is larger than data. Cellcano will not perform feature selection.\n")
+            print("Number of features is larger than data. Cellcano will not perform feature selection.\n")
             return adata
 
     if fs_method == "F-test":
@@ -172,47 +171,17 @@ def _select_feature(adata: A, fs_method = "F-test", num_features: int = 1000) ->
         features.sort()
         adata = adata[:, features]
 
-        ### write out original read count matrix
-        #tmp_df = pd.DataFrame(data=np.round(tmp_data, 3), 
-        #        index=adata.obs_names, columns=adata.var_names).T
-        #tmp_df_path = tmp_dir+os.sep+"tmp_counts.csv"
-        #tmp_df.to_csv(tmp_df_path)
-        ### write out cell annotations based on train
-        #cell_annots = adata.obs[Celltype_COLUMN].tolist()
-        #cell_annots_path = tmp_dir+os.sep+"tmp_cell_annots.txt"
-        #with open(cell_annots_path, 'w') as f:
-        #    for cell_annot in cell_annots:
-        #        f.write("%s\n" % cell_annot)
-        #if not os.path.exists(Ftest_Rcode):
-        #    logger.error("Rcode for F-test does not exist. Abort feature selection.")
-        #    return adata
-
-        #os.system("Rscript --vanilla " + Ftest_Rcode + " "+ tmp_df_path + " " + 
-        #        cell_annots_path + " " + str(num_features))
-        #os.system("rm {}".format(cell_annots_path))  ## remove the temporaty cell annotations
-        #os.system("rm {}".format(tmp_df_path))  ## remove the temporaty counts
-
-        #ftest_file = tmp_dir+os.sep+'F-test_features.txt'
-        #with open(ftest_file) as f:
-        #    features = f.read().splitlines()
-        #features.sort()
-        #adata = adata[:, features]
-
     if fs_method == "seurat":
         print("Use seurat in scanpy to select features.\n")
         sc.pp.highly_variable_genes(adata, n_top_genes=num_features, subset=True)
-        #seurat_file = tmp_dir+os.sep+'Seurat_features.txt'
-        #with open(seurat_file, 'w') as f:
-        #    f.writelines(adata.var_names.tolist())
-
     return adata
 
 
 def _scale_data(adata):
     '''Center scale
     '''
-    sc.pp.scale(adata, zero_center=True, max_value=6)
-    return adata
+    adata_copy = sc.pp.scale(adata, zero_center=True, max_value=6, copy=True)
+    return adata_copy
 
 def _visualize_data(adata, output_dir, color_columns=["celltype"],
         reduction="tSNE", prefix="data"):
