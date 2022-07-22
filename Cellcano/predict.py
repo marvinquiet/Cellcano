@@ -2,7 +2,6 @@
 Functions related to predict cell types
 '''
 import os, sys 
-import logging
 
 import tensorflow as tf
 import numpy as np
@@ -12,7 +11,8 @@ import pandas as pd
 from Cellcano.utils import _utils
 
 ## get the logger
-logger = logging.getLogger(__name__)
+#import logging
+#logger = logging.getLogger(__name__)
 
 def predict(args):
     model = tf.keras.models.load_model(args.trained_model)
@@ -39,30 +39,34 @@ def predict(args):
 
     ## fill in the data with the same order of features
     feature_idx = []
-    find_cnt = 0
-    for feature in features.index:
+    NA_idx = []
+    for f_idx, feature in enumerate(features.index):
         find_flag = False
         for test_idx, gene in enumerate(test_adata.var_names):
             if gene == feature:
                 feature_idx.append(test_idx)
                 find_flag = True
-                find_cnt += 1
                 break
         if not find_flag:
             feature_idx.append(-1)
+            NA_idx.append(f_idx)
+    print("%d genes from reference data are found in target.\n" % (len(features)-len(NA_idx)))
 
-    if find_cnt < 0.7*len(features):
-        print("The common feature space between reference dataset and target dataset is too few with %d genes.\n This will result in inaccurate prediction." % find_cnt)
+    if len(NA_idx) > 0.1 * len(features):
+        print("Warnings: too few genes found in target and this will result in inaccurate prediction.")
+    if -1 in feature_idx:
+        print("Warnings: since some feature does not exist in target dataset. We will fill in 0s for those columns.")
+        ## first replace those unique genes with index 
+        curated_feature_idx = np.array(feature_idx)
+        curated_feature_idx[NA_idx] = 0
+        test_adata = test_adata[:, curated_feature_idx].copy()
+        test_adata.var_names.values[NA_idx] = ["GenesNotFound-"+str(i) for i, NA_item in enumerate(NA_idx)]  ## change gene names
+        test_adata_X = test_adata.X
+        test_adata_X[:, NA_idx] = 0
+        test_adata.X = test_adata_X
     else:
-        print("Common feature space between reference and target: %d genes" % find_cnt)
-
-    if -1 not in feature_idx:
         test_adata = test_adata[:, feature_idx]
-        print("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
-    else:
-        print("Some features in the reference dataset are not found in the target dataset.")
-        sys.exit(1)
-        ## TODO: or maybe I should fill in 0 or average of the profiles for those missing genes
+    print("Data shape after processing: %d cells X %d genes"  % (test_adata.shape[0], test_adata.shape[1]))
 
     if test_adata.shape[0] >= 1000:
         ## center scale data by test data -> using feature information from test data and do two-step

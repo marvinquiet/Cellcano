@@ -56,9 +56,7 @@ def _run_ArchR(input_files: List[str], sample_names: List[str],
             minTSS=min_tss, minFrags=min_frags, 
             addGeneScoreMat=True)
     if len(ArchR_arrowfiles) != len(input_files):
-        print("")
-        ## TODO: add warning
-        pass
+        sys.exit("Length of ArchR arrow files does not equal to length of input files. Please check ArchR log for more information.")
 
     ArchR_proj_func = robjects.r['ArchRProject']
     ArchR_proj = ArchR_proj_func(ArrowFiles=robjects.StrVector(ArchR_arrowfiles),
@@ -107,16 +105,14 @@ def _run_ArchR(input_files: List[str], sample_names: List[str],
     if os.path.exists(tmp_dir) and len(os.listdir(tmp_dir)) == 0:
         os.rmdir(tmp_dir)  ## remove tmp directories
     else:
-        ## TODO: add warining
-        pass
+        sys.exit("Error in generating ArchR Files. Please check ArchR log for more information.")
 
     arrowfiles_dir = output_dir+os.sep+'ArrowFiles'
     if os.path.exists(arrowfiles_dir) and len(os.listdir(arrowfiles_dir)) != 0:
         cur_arrowfiles = glob.glob(cur_dir+os.sep+'*.arrow')
         for x in cur_arrowfiles: os.remove(x)  ## remove arrow files
     else:
-        ## TODO: add warning
-        pass
+        sys.exit("Error in generating ArchR Arrow Files. Please check ArchR log for more information.")
 
 def preprocess(args):
     '''Preprocess pipeline
@@ -161,53 +157,10 @@ def preprocess(args):
 
 
 if __name__ == '__main__':
-    data_dir = "/home/wma36/gpu/Pyramid/Pyramid/samples"
+    data_dir = "~/Cellcano/samples"
 
     suffix = "_filtered_fragments.tsv.gz"
     input_files =  glob.glob(data_dir+os.sep+'*'+suffix)
     sample_names = ["PBMC_Rep1"]
     _set_ArchR(genome='hg19', seed=2022)
     _run_ArchR(input_files, sample_names, output_dir=data_dir, add_tilemat=True)
-
-    #data_dir = "/home/wma36/gpu/data/Mousebrain_scATACseq/dscATACseq"
-
-    #suffix = '.fragments.tsv.gz'
-    #input_files =  glob.glob(data_dir+os.sep+'*'+suffix)
-    #sample_names = [os.path.basename(x).replace(suffix, '') for x in input_files]
-
-    #_set_ArchR(genome='mm10', seed=2022)
-    #_run_ArchR(input_files, sample_names, output_dir=data_dir)
-
-    #data_dir = "/home/wma36/gpu/data/humanPBMC_scATACseq/dscATACseq_isolated"
-    #suffix = '.fragments.tsv.gz'
-    #input_files = glob.glob(data_dir+os.sep+'*'+suffix)
-    #sample_names = [os.path.basename(x).replace(suffix, '') for x in input_files]
-
-    #_set_ArchR(genome='hg19', seed=2022)
-    #_run_ArchR(input_files, sample_names, output_dir=data_dir, add_tilemat=True)
-
-    #data_dir = "/home/wma36/gpu/data/humanPBMC_scATACseq/GSE139369_PBMC_MPAL_scATACseq"
-    #suffix = '.fragments.tsv.gz'
-    #input_files = glob.glob(data_dir+os.sep+'*'+suffix)
-    #sample_names = [os.path.basename(x).replace(suffix, '') for x in input_files]
-
-    #_set_ArchR(genome='hg19', seed=2022)
-    #_run_ArchR(input_files, sample_names, output_dir=data_dir)
-
-    #data_dir = "/home/wma36/gpu/data/Mousebrain_scATACseq/GSE111586_mouseatlas"
-    #suffix = ".mm10.sorted.withbarcodes.bam"
-    #input_files = glob.glob(data_dir+os.sep+'*'+suffix)
-    #sample_names = [os.path.basename(x).replace(suffix, '') for x in input_files]
-
-    #_set_ArchR(genome='mm10', seed=2022)
-    #_run_ArchR(input_files, sample_names, output_dir=data_dir, min_tss=1, min_frags=100)
-
-    ## human PBMC COVID
-    #data_dir = "/home/wma36/gpu/data/humanPBMC_scATACseq/YangChen_COVID19"
-    #suffix = "-fragments.tsv.gz"
-    #input_files = glob.glob(data_dir+os.sep+'*'+suffix)
-    #sample_names = [os.path.basename(x).replace(suffix, '').replace('500_', '') for x in input_files]
-
-    #_set_ArchR(genome='hg19', seed=2022)
-    #_run_ArchR(input_files, sample_names, output_dir=data_dir, min_tss=1, min_frags=1000)
-
