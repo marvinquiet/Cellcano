@@ -24,7 +24,7 @@ setup(
         },
     python_requires=">=3.8",
     install_requires=[
-        'tensorflow == 2.4.1',
+        'tensorflow == 2.7.1',
         'six~=1.15.0',
         'anndata == 0.7.4',
         'scanpy == 1.8.2',
