@@ -22,7 +22,7 @@ The above is a workflow figure illustrating how Cellcano works. Cellcano is base
 
 **Step 1**: Cellcano is developed as a Python package. You will need to install Python, and the recommended version is **Python 3.8**. 
 
-**Step 2**: Cellcano incorporates an R package [ArchR](https://www.archrproject.com/) to do data preprocessing, which turns raw scATAC-seq data (fragment files or bam files) into gene score matrices. Therefore, installation of R and ArchR are required. Please follow the [ArchR installation](https://www.archrproject.com/) to install ArchR.
+**Step 2**: Cellcano incorporates an R package [ArchR](https://www.archrproject.com/) to do data preprocessing, which turns raw scATAC-seq data (fragment files or bam files) into gene score matrices. Therefore, installation of R and ArchR are required. Please follow the [ArchR installation](https://www.archrproject.com/) to install ArchR. Installing ArchR takes around 30 minutes.
 
 
 **Step 3**: Use the following command to install Cellcano:
@@ -30,6 +30,7 @@ The above is a workflow figure illustrating how Cellcano works. Cellcano is base
 ```shell
 pip install Cellcano
 ```
+The installation will take seconds to finish and the software dependencies have been taken care by pip.
 
 <!-- Alternatively, one can use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to install Cellcano and to manage the environment. When conda is installed, the following command can be used to directly install all required environments, including R, Python and Cellcano. Note that the manual installation of ArchR is still needed. ```conda install -y -c marvinquiet cellcano-all=1.0.2``` -->
 
@@ -113,7 +114,7 @@ wget https://www.dropbox.com/s/e7g9vem3oxt096l/target_genescore.csv
 
 **Step 2: Use Cellcano to predict cell type**
 
-We then run following commands to train a prediction model from the reference data, and then predict cell types for the target data. You might get some warning messages depending on your system configuration, for example, when there's no GPU. 
+We then run following commands to train a prediction model from the reference data, and then predict cell types for the target data. You might get some warning messages depending on your system configuration, for example, when there's no GPU. Please note that GPU is not required for running Cellcano. With GPU, it takes around 5 minutes to run the demo. On the other hand, without GPU, it takes around 7 minutes.
 
 **NOTE**: if you installed Cellcano through conda, you need to activate the Cellcano environment by running `conda activate Cellcano` first. If you see the `(Cellcano)` before your command line, this means you have successfully activated the Cellcano conda environment.
 
