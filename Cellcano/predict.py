@@ -102,8 +102,11 @@ def predict(args):
             test_ref_adata = test_adata[low_entropy_cells]
             test_tgt_adata = test_adata[high_entropy_cells]
 
-            x_tgt_train = _utils._extract_adata(test_ref_adata)
-            y_tgt_train = _utils._label_to_onehot(test_ref_adata.obs.loc[low_entropy_cells, firstround_COLUMN].tolist(),
+            ## enlarge reference dataset for second round
+            sampled_ref_adata = _utils._oversample_cells(test_ref_adata, 
+                    celltype_col=firstround_COLUMN)
+            x_tgt_train = _utils._extract_adata(sampled_ref_adata)
+            y_tgt_train = _utils._label_to_onehot(sampled_ref_adata.obs[firstround_COLUMN].tolist(),
                     encoders=encoders)
             x_tgt_test = _utils._extract_adata(test_tgt_adata)
 

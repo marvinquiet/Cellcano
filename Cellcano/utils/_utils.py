@@ -290,6 +290,27 @@ def _select_confident_cells(adata, celltype_col):
     adata.obs.loc[high_entropy_cells, 'entropy_status'] = "high"
     return adata
 
+def _oversample_cells(adata, celltype_col):
+    '''Oversample cell types with number of cells lower than average
+    ---
+    Input:
+        - adata: anndata object from second round
+        - celltype_col: the column indicator
+    '''
+    sampled_cells = []
+    avg_cellnums = math.ceil(adata.shape[0]/len(set(adata.obs[celltype_col])))
+    for celltype in set(adata.obs[celltype_col]):
+        celltype_df = adata.obs[adata.obs[celltype_col] == celltype]
+        random.seed(RANDOM_SEED)
+        if celltype_df.shape[0] < avg_cellnums:
+            selected_cells = random.choices(list(celltype_df.index), k=avg_cellnums)
+        else:
+            selected_cells = list(celltype_df.index)
+        sampled_cells.extend(selected_cells)
+    sampled_adata = adata[sampled_cells]
+    return sampled_adata.copy()
+ 
+
 def _run_distiller(x_train, y_train, student_model, teacher_model,
         epochs=30, alpha=0.1, temperature=3):
     '''Train KD model
