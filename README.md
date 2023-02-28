@@ -2,7 +2,7 @@
 
 ---
 
-[![PyPI version](https://badge.fury.io/py/Cellcano.svg)](https://badge.fury.io/py/Cellcano) [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![PyPI version](https://badge.fury.io/py/Cellcano.svg)](https://badge.fury.io/py/Cellcano) [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-360/) [![DOI](https://zenodo.org/badge/449052687.svg)](https://zenodo.org/badge/latestdoi/449052687)
 
 Cellcano is an open source software for supervised cell type identification (celltyping) in scATAC-seq data. The motivation to develop Cellcano are:
 1. Supervised methods are more accurate, robust and efficient than unsupervised clustering methods in scATAC-seq data
