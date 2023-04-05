@@ -1,15 +1,20 @@
-### Cellcano
+# Cellcano
 
 ---
 
 [![PyPI version](https://badge.fury.io/py/Cellcano.svg)](https://badge.fury.io/py/Cellcano) [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-360/) [![DOI](https://zenodo.org/badge/449052687.svg)](https://zenodo.org/badge/latestdoi/449052687)
 
-Cellcano is an open source software for supervised cell type identification (celltyping) in scATAC-seq data. The motivation to develop Cellcano are:
+Cellcano is an open source software for supervised cell type identification (celltyping) in scATAC-seq data, published in [Nature Communications](https://doi.org/10.1038/s41467-023-37439-3). The motivation to develop Cellcano are:
 1. Supervised methods are more accurate, robust and efficient than unsupervised clustering methods in scATAC-seq data
 2. With more high-quality scATAC-seq datasets being generated, methods using scATAC-seq as references can have better prediction performances and are in high demand
 
 More details and tutorial: https://marvinquiet.github.io/Cellcano/.
 
+**Table of Contents**
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
+- [License](#license)
+- [Citing Our Work](#citing-our-work)
 
 
 ## System Requirements
@@ -66,7 +71,23 @@ This project is covered under the **MIT license**.
 
 
 
-## Citation
+## Citing Our Work
 
-For usage of the package and associated manuscript, please cite: https://doi.org/10.21203/rs.3.rs-1717357/v1
+For usage of the package and associated manuscript, please cite: 
+```BibTex
+@article{ma23cellcano,
+  title   = {Cellcano: supervised cell type identification for single cell ATAC-seq data},
+  author  = {Ma, Wenjing and Lu, Jiaying and Wu, Hao},
+  journal = {Nature Communications},
+  year    = {2023},
+  month   = {Apr.},
+  day     = {03},
+  volume={14},
+  number={1},
+  pages={1864},
+  issn={2041-1723},
+  doi={10.1038/s41467-023-37439-3},
+  url={https://doi.org/10.1038/s41467-023-37439-3}
+}
+```
 
