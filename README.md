@@ -42,7 +42,7 @@ Cellcano requires the following:
 - [h5py](https://www.h5py.org/) (2.10.0)
 - [keras](https://keras.io/) (version compatible with tensor flow)
 - [rpy2](https://rpy2.github.io/) (version compatible with both Python and R)
-- cuda toolkit (if using GPU, more information can be found [here](https://towardsdatascience.com/setting-up-tensorflow-gpu-with-cuda-and-anaconda-onwindows-2ee9c39b5c44))
+- `cuda toolkit` and `nvidia cudnn` if using GPU, more information can be found [here](https://towardsdatascience.com/setting-up-tensorflow-gpu-with-cuda-and-anaconda-onwindows-2ee9c39b5c44)
 
 If the input is scATAC-seq raw data (i.e. fragment file or bam file), [ArchR](https://www.archrproject.com/) package has to be installed. 
 
