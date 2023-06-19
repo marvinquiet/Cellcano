@@ -24,12 +24,12 @@ setup(
         },
     python_requires=">=3.8",
     install_requires=[
-        'tensorflow == 2.7.1',
-        'six~=1.15.0',
-        'anndata == 0.7.4',
-        'scanpy == 1.8.2',
-        'numpy == 1.19.2',
-        'h5py == 2.10.0',
+        'tensorflow',
+        'six',
+        'anndata',
+        'scanpy',
+        'numpy',
+        'h5py',
         'keras',
         'rpy2'
         ]
