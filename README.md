@@ -27,7 +27,8 @@ Cellcano package requires only a standard computer with enough RAM to support th
 
 #### OS requirements
 
-Cellcano supports `macOS`, `Linux` and `Windows`. It has been tested on all three systems.
+Cellcano supports `macOS`, `Linux` and `Windows`. It has been tested on all three systems. 
+(However, Cellcano has not been tested on M1 because I do not have the test environment. Thanks to @nleroy917, who has helped with the installation on M1, which can be referred in Issue #6.)
 
 #### Dependencies
 
