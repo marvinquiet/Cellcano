@@ -30,9 +30,9 @@ The above is a workflow figure illustrating how Cellcano works. Cellcano is base
 ```shell
 pip install Cellcano
 ```
-The installation will take seconds to finish and the software dependencies have been taken care by pip.
+The installation will take seconds to finish and the software dependencies have been taken care of by pip. We have tested our package on Windows, MacOS, and Linux. Thanks to our user Nathan, who has helped us find an installation problem on Mac M1. The current solution is to remove all the pinned dependencies in `setup.py` as suggested on the Github [issue](https://github.com/marvinquiet/Cellcano/issues/6) and [pull request](https://github.com/marvinquiet/Cellcano/pull/7). 
 
-<!-- Alternatively, one can use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to install Cellcano and to manage the environment. When conda is installed, the following command can be used to directly install all required environments, including R, Python and Cellcano. Note that the manual installation of ArchR is still needed. ```conda install -y -c marvinquiet cellcano-all=1.0.2``` -->
+<!-- Alternatively, one can use [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) to install Cellcano and to manage the environment. When conda is installed, the following command can be used to directly install all required environments, including R, Python, and Cellcano. Note that the manual installation of ArchR is still needed. ```conda install -y -c marvinquiet cellcano-all=1.0.2``` -->
 
 **Step 4**: If you have successfully installed Cellcano, you can try the following command:
 
