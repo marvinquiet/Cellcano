@@ -107,9 +107,9 @@ We first download the example data: two gene scores files for reference and targ
 
 ```shell
 ## download provided data
-wget https://www.dropbox.com/s/7mdevmylonlh4w4/ref_genescore.csv
-wget https://www.dropbox.com/s/18n5wabgg8g2gob/ref_meta.csv
-wget https://www.dropbox.com/s/e7g9vem3oxt096l/target_genescore.csv
+wget https://www.dropbox.com/s/tkp60608mm8tdn7/ref_genescore.csv
+wget https://www.dropbox.com/s/9mvi4atkn8reddr/ref_meta.csv
+wget https://www.dropbox.com/s/l1xxyiu7kk7bafn/target_genescore.csv
 ```
 
 **Step 2: Use Cellcano to predict cell type**
