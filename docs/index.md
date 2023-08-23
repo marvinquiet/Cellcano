@@ -166,7 +166,7 @@ cd train_data
 # Download sample fragment file
 wget https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM3722nnn/GSM3722015/suppl/GSM3722015_PBMC_Rep1_fragments.tsv.gz
 # Download processed cell metadata
-wget https://www.dropbox.com/s/18n5wabgg8g2gob/ref_meta.csv
+wget https://www.dropbox.com/s/9mvi4atkn8reddr/ref_meta.csv
 
 ## back to the main directory
 cd ..
@@ -212,7 +212,7 @@ mkdir test_data
 cd test_data
 
 ## download processed target data
-wget https://www.dropbox.com/s/e7g9vem3oxt096l/target_genescore.csv
+wget https://www.dropbox.com/s/l1xxyiu7kk7bafn/target_genescore.csv
 
 ## back to the main directory
 cd ..
